@@ -10,8 +10,8 @@ const initialState = {
   lastFetched: null, // timestamp in ms when customerDash was last successfully fetched
 };
 
-const MainSlice = createSlice({
-  name: 'Main',
+const AppSlice = createSlice({
+  name: 'app',
   initialState,
   reducers: {
     // payload can be anything; if caller wants a background refresh, pass:
@@ -66,6 +66,6 @@ export const {
   getCustomerDashFailure,
   clearProfileError,
   clearCustomerDash,
-} = MainSlice.actions;
+} = AppSlice.actions;
 
-export default MainSlice.reducer;
+export default AppSlice.reducer;

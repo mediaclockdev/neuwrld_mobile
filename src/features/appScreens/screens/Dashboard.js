@@ -9,7 +9,7 @@ import {
   Image,
   FlatList,
 } from 'react-native';
-import React, {useRef} from 'react';
+import React, {useCallback, useRef} from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import CustomHeader from '../../../components/CustomHeader';
 import {hp, ms, rr, s, vs, wp} from '../../../utils/responsive';
@@ -21,10 +21,26 @@ import DashboardCarousel from '../components/DashboardCarousel';
 import {fontFamily, fontSizes} from '../../../theme/typography';
 import {categories, products} from '../../../utils/globalJson';
 import {navigate} from '../../../utils/rootNavigation';
+import { useDispatch, useSelector } from 'react-redux';
+import { useFocusEffect } from '@react-navigation/native';
+import { getCustomerDashRequest } from '../appReducer';
+import { IMG_URL } from '../../../api/apiClient';
 
 const Dashboard = () => {
   const {theme} = useTheme();
   const styles = createStyles(theme);
+
+const {customerDash , isLoading} = useSelector(state => state.App);
+
+console.log("customerDash",customerDash)
+
+  const dispatch = useDispatch()
+
+   useFocusEffect(
+    useCallback(() => {
+      dispatch(getCustomerDashRequest());
+    }, [dispatch])
+  );
 
   const _handleProductClick = item => {
     navigate('ProductDetailsScreen', {
@@ -85,13 +101,13 @@ const Dashboard = () => {
               marginVertical: ms(10),
             },
           ]}>
-          {categories.map(item => (
-            <View key={item.id}>
+          {customerDash?.categories?.map(item => (
+            <View key={item.id} style={{alignItems: 'center'}}>
               <TouchableOpacity
                 onPress={() => handleCategory(item)}
                 style={styles.categoriesCircle}>
                 <Image
-                  source={item?.icon}
+                  source={{uri: IMG_URL + item?.image}}
                   style={[
                     styles.categoriesIcon,
                     {
@@ -108,7 +124,7 @@ const Dashboard = () => {
                     paddingTop: ms(10),
                   },
                 ]}>
-                {item?.name}
+                {item?.category_name}
               </Text>
             </View>
           ))}
@@ -186,6 +202,7 @@ const createStyles = theme =>
     categoriesIcon: {
       width: '70%',
       height: '70%',
+      resizeMode:'contain'
     },
     productView: {
       width: '46%',

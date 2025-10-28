@@ -36,14 +36,14 @@ const Appnavigator = () => {
 
    
     if (!user) {
-      return <AuthNavigator />;
+      return <MainStack />;
     }
 
     if (user) {
       return <MainStack />;
     }
 
-    return <AuthNavigator />;
+    return <MainStack />;
   };
 
   return (

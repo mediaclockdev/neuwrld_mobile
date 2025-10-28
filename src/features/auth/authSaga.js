@@ -4,13 +4,11 @@ import { ALL_APi_LIST } from '../../utils/apis';
 import { getErrorMessage } from '../../utils/errorHandler';
 import { tokenFailure, tokenSuccess } from './authReducer';
 
-export function* tokenRequestSaga(action) {
+// Worker Saga
+function* tokenRequestSaga(action) {
   try {
     const response = yield call(postApi, ALL_APi_LIST.user, action.payload);
-
-    // check response
     console.log('API response >>>', response?.data);
-
     yield put(tokenSuccess(response?.data?.data || {}));
   } catch (error) {
     getErrorMessage(
@@ -21,7 +19,10 @@ export function* tokenRequestSaga(action) {
   }
 }
 
-// ✅ Proper watcher
-export function* authSaga() {
+// Watcher Saga
+function* authSaga() {
   yield all([takeLatest('Auth/tokenRequest', tokenRequestSaga)]);
 }
+
+// ✅ Correct export
+export default authSaga;

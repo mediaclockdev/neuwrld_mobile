@@ -6,7 +6,7 @@ import {fontFamily, fontSizes} from '../../../theme/typography';
 import SubHeader from '../components/SubHeader';
 import {goBack} from '../../../utils/rootNavigation';
 
-const updateProfile = () => {
+const UpdateProfile = () => {
   const {theme} = useTheme();
   const styles = createStyles(theme);
   return (
@@ -19,7 +19,7 @@ const updateProfile = () => {
   );
 };
 
-export default updateProfile;
+export default UpdateProfile;
 
 const createStyles = theme =>
   StyleSheet.create({

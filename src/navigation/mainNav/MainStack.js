@@ -13,7 +13,7 @@ import Search from '../../features/appScreens/screens/Search';
 import MyOrdersScreen from '../../features/appScreens/Orders/MyOrdersScreen';
 import Product from '../../features/appScreens/Product/Products';
 import FilterScreen from '../../features/appScreens/Product/FilterScreen';
-import updateProfile from '../../features/appScreens/userProfile/updateProfile';
+import UpdateProfile from '../../features/appScreens/userProfile/UpdateProfile';
 import Notification from '../../features/appScreens/notification/Notification';
 const Stack = createStackNavigator();
 
@@ -95,9 +95,9 @@ export default function MainStack() {
         component={FilterScreen}
       />
       <Stack.Screen
-        name="updateProfile"
+        name="UpdateProfile"
         options={{headerShown: false}}
-        component={updateProfile}
+        component={UpdateProfile}
       />
       <Stack.Screen
         name="Notification"

@@ -3,8 +3,8 @@ import axios from 'axios';
 import { getToken, refreshAuthToken } from './tokenManager';
 
 // replace with your base URL
-export const API_BASE_URL = 'https://your-api-base-url.com';
-
+export const API_BASE_URL = 'https://maroon-crane-692077.hostingersite.com/api/';
+export const IMG_URL = 'https://maroon-crane-692077.hostingersite.com/';
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 60000,

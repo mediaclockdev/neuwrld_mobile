@@ -34,7 +34,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - NitroModules (0.29.6):
+  - NitroModules (0.29.8):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1854,7 +1854,7 @@ PODS:
     - React-logger (= 0.79.6)
     - React-perflogger (= 0.79.6)
     - React-utils (= 0.79.6)
-  - ReactNativeAvoidSoftinput (8.0.0):
+  - ReactNativeAvoidSoftinput (8.0.2):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1902,7 +1902,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNGestureHandler (2.28.0):
+  - RNGestureHandler (2.29.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1926,7 +1926,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNScreens (4.16.0):
+  - RNScreens (4.18.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1950,9 +1950,9 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNScreens/common (= 4.16.0)
+    - RNScreens/common (= 4.18.0)
     - Yoga
-  - RNScreens/common (4.16.0):
+  - RNScreens/common (4.18.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2245,7 +2245,7 @@ SPEC CHECKSUMS:
   hermes-engine: 44bb6fe76a6eb400d3a992e2d0b21946ae999fa9
   lottie-ios: a881093fab623c467d3bce374367755c272bdd59
   lottie-react-native: 0992f59b1bbf07c523d3a86a359ce4aa1b49dd2e
-  NitroModules: f368f6c7da7697950e9791489b50631ff4c145f8
+  NitroModules: 1d430938ab898c56cc049d1b146fe57c96c3af44
   RCT-Folly: 36fe2295e44b10d831836cc0d1daec5f8abcf809
   RCTDeprecation: 9bc64754b40b86fa5e32f293ab3ea8eea2248339
   RCTRequired: ee36c1ce9a5e65a3f629c13f38a85308eb8eebda
@@ -2313,10 +2313,10 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: d3b706769c10ab0a19199a4d39b73544fffdc549
   ReactCodegen: a3a9eea115b375f25e54643eafa9a7bcdf307f1b
   ReactCommon: d7a6354467ffb346f88312e828764b87d4c81c75
-  ReactNativeAvoidSoftinput: cc7a46ea0e23adce46fed6a66627235d64ee28eb
+  ReactNativeAvoidSoftinput: 3f91fcbb0ccc1b52ac7d764fe2a3009bbdbd6f65
   RNBootSplash: 7bae807e5de769a1058a23f93291b6322269bc65
-  RNGestureHandler: f8d0f8c032ba1209eb370bcc29e1138788208673
-  RNScreens: 5ec356ebbf743eafa3d263eda1f15d03299a9f64
+  RNGestureHandler: f29c357da0402e27eb929df5e3ac9fa1b201658e
+  RNScreens: ff9b889ead6100d019d236599741efc1c4586128
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: dc7c21200195acacb62fa920c588e7c2106de45e
 
