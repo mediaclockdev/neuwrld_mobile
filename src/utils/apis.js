@@ -1,7 +1,15 @@
 export const ALL_APi_LIST = {
-    // non auth 
-    allCategorys: 'categories',
-    dashboard: 'dashboard',
-    user: 'getProfile',
-    customer_Dash:'getdashboard'
-}
+  // auth //
+  register: 'register',
+  login: 'login',
+  logout: 'logout',
+
+  // non auth
+  allCategories: 'categories',
+  productList: 'product-listing',
+  product_details:'product',
+
+  dashboard: 'home-landing',
+  user: 'getProfile',
+  customer_Dash: 'home-landing',
+};

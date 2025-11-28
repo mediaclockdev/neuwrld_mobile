@@ -9,14 +9,9 @@ import {
   TextInput,
 } from 'react-native';
 import React, {useCallback, useState} from 'react';
-import {useFocusEffect} from '@react-navigation/native';
-import {getItem} from '../../../utils/storage';
-import CartPlaceholder from '../components/CartPlaceholder';
 import {useTheme} from '../../../context/ThemeContext';
 import {hp, ms, s, vs} from '../../../utils/responsive';
 import {fontFamily, fontSizes} from '../../../theme/typography';
-import CustomButton from '../../../components/CustomButton';
-import CustomTextInput from '../../../components/CustomTextInput';
 import {ICONS} from '../../../theme/colors';
 import {profilejson} from '../../../utils/globalJson';
 import {navigate} from '../../../utils/rootNavigation';
@@ -41,14 +36,13 @@ const UserProfile = () => {
     // instead of rendering directly, just toggle visibility
     setProfileUpdateVisible(true);
   };
-console.log("localPhoto",localPhoto);
   const handleActions = item => {
     item?.slug === 'settings'
       ? navigate('Settings')
       : item?.slug === 'orders'
       ? navigate('MyOrdersScreen')
       : item.slug === 'profile'
-      ? navigate('updateProfile')
+      ? navigate('ProfileDetails')
       : item?.slug === 'saved'
       ? navigate('AddressScreen')
       : item?.slug === 'logout'
@@ -89,9 +83,13 @@ console.log("localPhoto",localPhoto);
         <Text style={styles.headerText}>My Profile</Text>
         <View style={styles.profileCont}>
           <Image
-            source={localPhoto ? {uri: localPhoto?.path} : {
-              uri: 'https://images.unsplash.com/photo-1750390200217-628bdc2d7651?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-            }}
+            source={
+              localPhoto
+                ? {uri: localPhoto?.path}
+                : {
+                    uri: 'https://images.unsplash.com/photo-1750390200217-628bdc2d7651?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+                  }
+            }
             style={styles.profile}
           />
           <TouchableOpacity
@@ -129,6 +127,9 @@ console.log("localPhoto",localPhoto);
         <UploadMedia
           setImageSource={src => {
             setLocalPhoto(src);
+            setProfileUpdateVisible(false);
+          }}
+          onBackdropPress={() => {
             setProfileUpdateVisible(false);
           }}
           theme={theme}

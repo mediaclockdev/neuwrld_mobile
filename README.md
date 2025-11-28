@@ -95,3 +95,12 @@ To learn more about React Native, take a look at the following resources:
 - [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
 - [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
 - [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+
+
+************* readme maitained by chhetri ***********************
+
+To handle all images as per the orientatins 
+using - npm i react-native-fast-image
+Square grid: aspectRatio: 1
+Banner: aspectRatio: 16/9
+Portrait: aspectRatio: 3/4

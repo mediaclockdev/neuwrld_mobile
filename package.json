@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@d11/react-native-fast-image": "^8.13.0",
     "@hookform/resolvers": "^5.2.1",
     "@ptomasroos/react-native-multi-slider": "^2.2.2",
     "@react-native-community/blur": "^4.4.1",
@@ -31,6 +32,7 @@
     "react-native-mmkv": "^3.3.0",
     "react-native-modal": "^14.0.0-rc.1",
     "react-native-nitro-modules": "^0.29.0",
+    "react-native-render-html": "^6.3.4",
     "react-native-responsive-screen": "^1.4.2",
     "react-native-safe-area-context": "^5.6.1",
     "react-native-screens": "^4.15.3",

@@ -11,7 +11,7 @@ import {
 import React, {useCallback, useState} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {getItem} from '../../../utils/storage';
-import CartPlaceholder from '../components/CartPlaceholder';
+import CartPlaceholder from '../Skeleton/CartPlaceholder';
 import {useTheme} from '../../../context/ThemeContext';
 import {hp, ms, s, vs} from '../../../utils/responsive';
 import {fontFamily, fontSizes} from '../../../theme/typography';

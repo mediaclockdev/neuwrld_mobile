@@ -18,7 +18,7 @@ export const createStyles = theme =>
 
     topImagesRow: {
       width: width - 32,
-      marginTop: vs(15),
+      marginTop: vs(40),
       flexDirection: 'row',
       alignItems: 'flex-start',
     },

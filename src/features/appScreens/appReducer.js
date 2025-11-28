@@ -1,5 +1,6 @@
 // slices/ProfileSlice.js
 import {createSlice} from '@reduxjs/toolkit';
+import {navigate} from '../../utils/rootNavigation';
 
 const initialState = {
   profile_status: '',
@@ -8,6 +9,10 @@ const initialState = {
   isRefreshing: false, // for background refreshes (silent refresh; small spinner if needed)
   customerDash: {},
   lastFetched: null, // timestamp in ms when customerDash was last successfully fetched
+  allCategories: [],
+  subCategory: [],
+  products: [],
+  productDetails: {},
 };
 
 const AppSlice = createSlice({
@@ -57,6 +62,85 @@ const AppSlice = createSlice({
       state.customerDash = {};
       state.lastFetched = null;
     },
+
+    getAllCategoriesRequest(state, action) {
+      state.isLoading = true;
+      state.profile_status = action.type;
+      state.error = null;
+    },
+
+    getAllCategoriesSuccess(state, action) {
+      state.profile_status = action.type;
+      state.isLoading = false;
+      state.allCategories = action.payload?.categories_nested || [];
+      state.error = null;
+    },
+
+    getAllCategoriesFailure(state, action) {
+      state.profile_status = action.type;
+      state.isLoading = false;
+      state.error = action.payload || null;
+    },
+
+    getSubcategoryByCategoriesIdRequest(state, action) {
+      state.isLoading = true;
+      state.profile_status = action.type;
+      state.error = null;
+    },
+
+    getSubcategoryByCategoriesIdSuccess(state, action) {
+      state.profile_status = action.type;
+      state.isLoading = false;
+      state.subCategory = action.payload || [];
+      state.error = null;
+    },
+
+    getSubcategoryByCategoriesIdFailure(state, action) {
+      state.profile_status = action.type;
+      state.isLoading = false;
+      state.error = action.payload || null;
+    },
+
+    getProductRequest(state, action) {
+      state.isLoading = true;
+      state.profile_status = action.type;
+      state.error = null;
+    },
+
+    getProductSuccess(state, action) {
+      state.profile_status = action.type;
+      state.isLoading = false;
+      let data = action.payload;
+      state.products = data || [];
+      navigate('ProductList');
+      state.error = null;
+    },
+
+    getProductFailure(state, action) {
+      state.profile_status = action.type;
+      state.isLoading = false;
+      state.error = action.payload || null;
+    },
+    getProductDetailsRequest(state, action) {
+      state.isLoading = true;
+      state.profile_status = action.type;
+      state.error = null;
+    },
+
+    getProductDetailsSuccess(state, action) {
+      state.profile_status = action.type;
+      state.isLoading = false;
+      let data = action.payload
+      state.productDetails = data || {}
+      navigate('ProductDetailsScreen');
+      state.error = null;
+    },
+
+    getProductDetailsFailure(state, action) {
+      state.profile_status = action.type;
+      state.isLoading = false;
+      state.error = action.payload || null;
+    },
   },
 });
 
@@ -66,6 +150,22 @@ export const {
   getCustomerDashFailure,
   clearProfileError,
   clearCustomerDash,
+
+  getAllCategoriesRequest,
+  getAllCategoriesSuccess,
+  getAllCategoriesFailure,
+
+  getProductRequest,
+  getProductSuccess,
+  getProductFailure,
+
+  getSubcategoryByCategoriesIdRequest,
+  getSubcategoryByCategoriesIdSuccess,
+  getSubcategoryByCategoriesIdFailure,
+
+  getProductDetailsRequest,
+  getProductDetailsSuccess,
+  getProductDetailsFailure,
 } = AppSlice.actions;
 
 export default AppSlice.reducer;

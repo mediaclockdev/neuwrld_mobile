@@ -1,20 +1,22 @@
 import {View, Text} from 'react-native';
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import Dashboard from '../../features/appScreens/screens/Dashboard';
+import Dashboard from '../../features/appScreens/userDashboard/Dashboard';
 import MyTabs from '../mainNav/MyTabs';
-import ProductDetailsScreen from '../../features/appScreens/screens/ProductDetailsScreen';
+import ProductDetailsScreen from '../../features/appScreens/Product/ProductDetailsScreen';
 import Settings from '../../features/appScreens/userProfile/Settings';
-import Checkout from '../../features/appScreens/screens/Checkout';
+import Checkout from '../../features/appScreens/checkout/Checkout';
 import AddressScreen from '../../features/appScreens/userProfile/AddressScreen';
 import AddAddressScreen from '../../features/appScreens/userProfile/AddAddressScreen';
-import Payment from '../../features/appScreens/screens/Payment';
+import Payment from '../../features/appScreens/checkout/Payment';
 import Search from '../../features/appScreens/screens/Search';
 import MyOrdersScreen from '../../features/appScreens/Orders/MyOrdersScreen';
-import Product from '../../features/appScreens/Product/Products';
 import FilterScreen from '../../features/appScreens/Product/FilterScreen';
 import UpdateProfile from '../../features/appScreens/userProfile/UpdateProfile';
 import Notification from '../../features/appScreens/notification/Notification';
+import ProductList from '../../features/appScreens/Product/ProductList';
+import ProfileDetails from '../../features/appScreens/userProfile/ProfileDetails';
+import UserAvatar from '../../features/appScreens/userProfile/UserAvatar';
 const Stack = createStackNavigator();
 
 export default function MainStack() {
@@ -43,6 +45,11 @@ export default function MainStack() {
         name="MyTabs"
         options={{headerShown: false}}
         component={MyTabs}
+      />
+      <Stack.Screen
+        name="ProductList"
+        options={{headerShown: false}}
+        component={ProductList}
       />
       <Stack.Screen
         name="ProductDetailsScreen"
@@ -84,11 +91,7 @@ export default function MainStack() {
         options={{headerShown: false}}
         component={MyOrdersScreen}
       />
-      <Stack.Screen
-        name="Product"
-        options={{headerShown: false}}
-        component={Product}
-      />
+
       <Stack.Screen
         name="FilterScreen"
         options={{headerShown: false}}
@@ -103,6 +106,16 @@ export default function MainStack() {
         name="Notification"
         options={{headerShown: false}}
         component={Notification}
+      />
+      <Stack.Screen
+        name="ProfileDetails"
+        options={{headerShown: false}}
+        component={ProfileDetails}
+      />
+      <Stack.Screen
+        name="UserAvatar"
+        options={{headerShown: false}}
+        component={UserAvatar}
       />
     </Stack.Navigator>
   );

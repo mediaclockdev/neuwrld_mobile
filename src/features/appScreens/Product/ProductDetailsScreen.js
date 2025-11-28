@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -17,14 +17,24 @@ import {goBack, navigate} from '../../../utils/rootNavigation';
 import {useTheme} from '../../../context/ThemeContext';
 import CustomButton from '../../../components/CustomButton';
 import {getItem, setItem} from '../../../utils/storage';
+import {useDispatch, useSelector} from 'react-redux';
+import {IMG_URL} from '../../../api/apiClient';
+import {getProductDetailsRequest} from '../appReducer';
+import RenderHtml from 'react-native-render-html';
 
 const ProductDetailsScreen = ({route, navigation}) => {
   const {theme} = useTheme();
   const styles = createStyles(theme);
+  const {isLoading, productDetails} = useSelector(state => state.App);
 
-  const {productData} = route.params;
-  const [selectedSize, setSelectedSize] = useState('S');
+  const dispatch = useDispatch();
+
+  // const {productData} = route.params;
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedFebric, setSelectedFebric] = useState('');
   const [Cart, setCart] = useState([]);
+  const [productImages, setProductsImages] = useState([]);
 
   const [galleryVisible, setGalleryVisible] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
@@ -34,43 +44,27 @@ const ProductDetailsScreen = ({route, navigation}) => {
     setGalleryVisible(true);
   };
 
- const productImages = [
-    {uri: 'https://picsum.photos/400/500?random=1'},
-    {uri: 'https://picsum.photos/400/500?random=2'},
-    {uri: 'https://picsum.photos/400/500?random=3'},
-    {uri: 'https://picsum.photos/400/500?random=4'},
-    {uri: 'https://picsum.photos/400/500?random=5'},
-  ];
+  const scrollViewRef = useRef(null);
 
-  const product = {
-    id: '1',
-    category: 'Female’s Style',
-    title: 'Light Brown Jacket',
-    price: 83.97,
-    rating: productData.rate,
-    color: 'Brown',
-    sizes: ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
-    selectedSize: selectedSize,
-    images: [
-      'https://picsum.photos/400/500?random=1',
-      'https://picsum.photos/400/500?random=2',
-      'https://picsum.photos/400/500?random=3',
-      'https://picsum.photos/400/500?random=4',
-      'https://picsum.photos/400/500?random=5',
-    ],
-
-    extraImages: 10,
-    productImage: productData.image,
-    title: productData.title,
-
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+  const scrollToTop = () => {
+    scrollViewRef.current?.scrollTo({y: 0, animated: true});
   };
+
+  const HTMLRenderContent = content => {
+    return {html: content};
+  };
+
   // Load cart on mount
   useEffect(() => {
     const prev = getItem('cart');
     if (prev) {
       setCart(prev);
+    }
+    if (productDetails?.images?.length > 0) {
+      const img = productDetails?.images?.map(item => ({
+        uri: IMG_URL + item,
+      }));
+      setProductsImages(img);
     }
   }, []);
 
@@ -80,10 +74,25 @@ const ProductDetailsScreen = ({route, navigation}) => {
     setItem('cart', updatedCart);
     setAddedToCart(true);
   };
+  const fetchProductDetails = (item, variables) => {
+    console.log('item',item)
+    dispatch(getProductDetailsRequest(variables?.sku));
+    if (item?.id == 3) {
+      setSelectedSize(variables);
+      return;
+    } else if (item?.id == 2) {
+      setSelectedFebric(variables);
+      return;
+    } else if (item?.id == 1) {
+      setSelectedColor(variables);
+      return;
+    }
+    scrollToTop();
+  };
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
         <SubHeader
           onPressLeftIcon={() => {
             goBack();
@@ -97,14 +106,14 @@ const ProductDetailsScreen = ({route, navigation}) => {
         {/* Product Main Image */}
         <View style={styles.mainImageCont}>
           <Image
-            source={{uri: product.productImage}}
+            source={{uri: productDetails?.product?.image}}
             style={styles.mainImage}
           />
         </View>
 
         {/* --- Thumbnail Row --- */}
         <FlatList
-          data={product.images}
+          data={productDetails?.images}
           keyExtractor={(item, index) => index.toString()}
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -113,7 +122,7 @@ const ProductDetailsScreen = ({route, navigation}) => {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => {
-                if (index === product.images.length - 1) {
+                if (index === productDetails?.images?.length - 1) {
                   // Open gallery on last item
                   openGallery(index);
                 } else {
@@ -121,14 +130,19 @@ const ProductDetailsScreen = ({route, navigation}) => {
                 }
               }}>
               <View style={styles.thumbnailWrapper}>
-                <Image source={{uri: item}} style={styles.thumbnail} />
-                {index === product.images.length - 1 && (
-                  <View style={styles.overlay}>
-                    <Text style={styles.overlayText}>
-                      +{product.extraImages}
-                    </Text>
-                  </View>
-                )}
+                <Image
+                  source={{uri: IMG_URL + item}}
+                  style={styles.thumbnail}
+                />
+
+                {index === productDetails?.images?.length - 1 &&
+                  productDetails?.images?.length > 6 && (
+                    <View style={styles.overlay}>
+                      <Text style={styles.overlayText}>
+                        +{productDetails?.images?.length}
+                      </Text>
+                    </View>
+                  )}
               </View>
             </TouchableOpacity>
           )}
@@ -136,23 +150,64 @@ const ProductDetailsScreen = ({route, navigation}) => {
 
         {/* Product Info */}
         <View style={styles.details}>
-          <Text style={styles.category}>{product.category}</Text>
-          <Text style={styles.title}>{product.title}</Text>
+          <Text style={styles.category}>
+            {productDetails?.product?.category}
+          </Text>
+          <Text style={styles.title}>{productDetails?.product?.name}</Text>
 
           <View style={styles.ratingRow}>
             <Text style={styles.star}>⭐</Text>
-            <Text style={styles.rating}>{product.rating}</Text>
+            <Text style={styles.rating}>
+              {productDetails?.product?.total_rating}
+            </Text>
           </View>
 
           <Text style={styles.sectionTitle}>Product Details</Text>
-          <Text style={styles.description}>
-            {product.description} <Text style={styles.readMore}>Read more</Text>
-          </Text>
+          <RenderHtml
+            contentWidth={'100%'}
+            source={HTMLRenderContent(productDetails?.product?.product_details)}
+          />
+          <Text style={styles.sectionTitle}>Product Specifications</Text>
 
+          <RenderHtml
+            contentWidth={'100%'}
+            source={HTMLRenderContent(productDetails?.product?.specifications)}
+          />
+
+          {productDetails?.attribute_options.map(item => (
+            <View>
+              <Text style={styles.sectionTitle}>Select {item?.name}</Text>
+              <View style={styles.sizeRow}>
+                {item?.options?.map(data => (
+                  <TouchableOpacity
+                    key={data?.sku}
+                    style={[
+                      styles.sizeButton,
+                      selectedSize?.sku == data?.sku
+                        ? styles.activeSize
+                        : selectedColor?.sku == data?.sku
+                        ? styles.activeSize
+                        : selectedFebric?.sku == data?.sku
+                        ? styles.activeSize
+                        : styles.sizeButton,
+                    ]}
+                    onPress={() => fetchProductDetails(item, data)}>
+                    <Text
+                      style={[
+                        styles.sizeText,
+                        // selectedSize === size && styles.activeSizeText,
+                      ]}>
+                      {data?.value}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ))}
           {/* Sizes */}
-          <Text style={styles.sectionTitle}>Select Size</Text>
+
           <View style={styles.sizeRow}>
-            {product.sizes.map(size => (
+            {productDetails?.colors?.map(size => (
               <TouchableOpacity
                 key={size}
                 style={[
@@ -170,17 +225,12 @@ const ProductDetailsScreen = ({route, navigation}) => {
               </TouchableOpacity>
             ))}
           </View>
-
-          {/* Color */}
-          <Text style={styles.sectionTitle}>
-            Select Color : <Text style={styles.bold}>{product.color}</Text>
-          </Text>
         </View>
       </ScrollView>
 
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
-        <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+        <Text style={styles.price}>${productDetails?.discount_price}</Text>
         <CustomButton
           leftIcon={ICONS.add_to_cart}
           leftIconStyle={styles.cart}
@@ -189,7 +239,7 @@ const ProductDetailsScreen = ({route, navigation}) => {
           onPress={() => {
             addedToCart
               ? navigation.navigate('MyTabs', {screen: 'Cart'})
-              : _addToCart(product);
+              : _addToCart(productDetails);
           }}
         />
       </View>

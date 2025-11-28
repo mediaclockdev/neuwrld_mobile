@@ -13,6 +13,7 @@ export const colors = {
   text: '#1C1C1E', // dark warm text
   input_text: '#A9A9A9',
   form_border: '#B0B0B0',
+  blue:'#3847ff',
 };
 
 export const ICONS = {
@@ -40,6 +41,9 @@ export const ICONS = {
   filter: require('../../assets/icons/filter.png'),
   delivery: require('../../assets/icons/delivery.png'),
   lightning: require('../../assets/icons/lightning.png'),
+  sortBy: require('../../assets/icons/sortBy.png'),
+  profile_info: require('../../assets/icons/profile_info.png'),
+  space: require('../../assets/icons/space.png'),
 
   // bottom tabs
   home: require('../../assets/icons/House.png'),

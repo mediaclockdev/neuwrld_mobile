@@ -21,6 +21,8 @@ import {fontFamily, fontSizes} from '../../../theme/typography';
 import HeaderGoBack from '../components/HeaderGoBack';
 import {setUser} from '../../../utils/authStorage';
 import OtpInputPopUp from '../components/OtpInputPopUp';
+import {useDispatch, useSelector} from 'react-redux';
+import {signInRequest} from '../authReducer';
 const Login = ({navigation}) => {
   const {theme} = useTheme();
   const styles = createStyles(theme);
@@ -32,6 +34,12 @@ const Login = ({navigation}) => {
       AvoidSoftInput.setEnabled(false);
     };
   }, []);
+
+  const dispatch = useDispatch();
+
+   const {isRegisterSuccess, isDataSubmitting} = useSelector(
+    state => state.Auth,
+  );
 
   useFocusEffect(onFocusEffect); // register callback to focus events
   const [loginType, setLoginType] = useState('email');
@@ -68,23 +76,34 @@ const Login = ({navigation}) => {
   });
 
   const handleLogin = data => {
-    loginType === 'email'
-      ? (setLoading(true),
-        setTimeout(() => {
-          setLoading(false);
-          setUser({userType: 'user', email: data.email});
-        }, 2000))
-      : setOtpModalVisible(true);
+    if (loginType === 'email') {
+      let payload = {
+        email: data?.email,
+        password: data?.password,
+        fcm_token: 'fcm_token_here',
+        device_id: 'device_unique_id',
+      };
+
+      dispatch(signInRequest(payload));
+    } else {
+      setOtpModalVisible(true);
+    }
+
+    // (setLoading(true),
+    //   setTimeout(() => {
+    //     setLoading(false);
+    //     setUser({userType: 'user', email: data.email});
+    //   }, 2000))
   };
 
   const verifyOtp = () => {
     setOtpModalVisible(false);
-    (setLoading(true),
-        setTimeout(() => {
-          setLoading(false);
-          setUser({userType: 'user', phone: mobile});
-        }, 2000))
-  }
+    setLoading(true),
+      setTimeout(() => {
+        setLoading(false);
+        setUser({userType: 'user', phone: mobile});
+      }, 2000);
+  };
 
   return (
     <AvoidSoftInputView style={styles.parent} behavior="padding">
@@ -193,7 +212,7 @@ const Login = ({navigation}) => {
                     handleLogin(mobile);
                   }
                 }}
-                loading={loading}
+                loading={isDataSubmitting}
               />
             </>
           )}

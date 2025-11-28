@@ -22,6 +22,11 @@ import {fontFamily, fontSizes} from '../../../theme/typography';
 import SignUpTab from '../components/SignUpTab';
 import OtpInputPopUp from '../components/OtpInputPopUp';
 import {usePopup} from '../../../context/PopupContext';
+import PopupModal from '../../../components/PopupModal';
+import ReusableModal from '../../appScreens/components/ReusableModal';
+import {loerms_ipsum} from '../../../utils/globalJson';
+import {useDispatch, useSelector} from 'react-redux';
+import {signUpRequest} from '../authReducer';
 
 const emailSchema = Yup.object().shape({
   fullName: Yup.string().required('Full name is required'),
@@ -45,10 +50,17 @@ const phoneSchema = Yup.object().shape({
 const Signup = ({navigation}) => {
   const {showPopup} = usePopup();
 
+  const {isRegisterSuccess, isDataSubmitting} = useSelector(
+    state => state.Auth,
+  );
+
+  const dispatch = useDispatch();
+
   const {theme} = useTheme(); // 👈 hook works here
   const styles = createStyles(theme);
 
   const [isOtpModalVisible, setOtpModalVisible] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState('Email');
   const [mobile, setMobile] = useState('');
   const [resolver, setResolver] = useState(() => yupResolver(emailSchema));
@@ -106,12 +118,36 @@ const Signup = ({navigation}) => {
     const regex = /^\d{9,14}$/;
     return regex.test(number);
   }
-  console.log('first', validateMobileNumber);
 
   const onSubmit = async data => {
     console.log('Register Data:', data);
+    let payload = {
+      fullName: data?.fullName,
+      email: data?.email,
+      password: data?.password,
+      confirmPassword: data?.confirmPassword,
+      mobile: '9876543210',
+      terms: data?.terms,
+    };
+    dispatch(signUpRequest(payload));
+
     // API Call
   };
+
+  useEffect(() => {
+    if (isRegisterSuccess) {
+      showPopup({
+        type: 'success',
+        title: 'Done!',
+        message: 'Successfully registerd , thank you for choosing us  🎉',
+        confirmText: 'Continue to Login',
+        onConfirm: () => navigation.navigate('Login'),
+      });
+      setTimeout(() => {
+        navigation.replace('Login');
+      }, 1500);
+    }
+  }, [isRegisterSuccess]);
 
   const handleMobileRegister = otp => {
     console.log(otp);
@@ -163,7 +199,7 @@ const Signup = ({navigation}) => {
                   onChangeText={onChange}
                   onBlur={onBlur}
                   icon={ICONS.user}
-                  error={errors.firstName?.message}
+                  error={errors.fullName?.message}
                 />
               )}
             />
@@ -240,7 +276,15 @@ const Signup = ({navigation}) => {
                     )}
                   </View>
                   <Text style={styles.terms}>
-                    I accept the Terms & Conditions
+                    I accept the
+                    <Text
+                      onPress={() => {
+                        setShowTermsModal(true);
+                      }}
+                      style={{color: '#3847ff'}}>
+                      {' '}
+                      Terms & Conditions
+                    </Text>
                   </Text>
                 </TouchableOpacity>
               )}
@@ -251,7 +295,7 @@ const Signup = ({navigation}) => {
             <CustomButton
               title="Sign Up"
               onPress={handleSubmit(onSubmit)}
-              loading={isSubmitting}
+              loading={isDataSubmitting}
             />
           </View>
         )}
@@ -301,7 +345,17 @@ const Signup = ({navigation}) => {
                   />
                 )}
               </TouchableOpacity>
-              <Text style={styles.terms}>I accept the Terms & Conditions</Text>
+              <Text style={styles.terms}>
+                I accept the
+                <Text
+                  onPress={() => {
+                    setShowTermsModal(true);
+                  }}
+                  style={{color: '#3847ff'}}>
+                  {' '}
+                  Terms & Conditions
+                </Text>
+              </Text>
             </View>
 
             {termsErr && <Text style={{color: 'red'}}>{termsErr}</Text>}
@@ -357,6 +411,18 @@ const Signup = ({navigation}) => {
           handleMobileRegister(otp);
         }}
       />
+
+      {/* // terms and Conditions popup // */}
+      <ReusableModal
+        isVisible={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        title={'Terms & Conditions'}
+        children={
+          <View style={styles.termscontainer}>
+            <Text style={styles.termsDetails}>{loerms_ipsum}</Text>
+          </View>
+        }
+      />
     </AvoidSoftInputView>
   );
 };
@@ -384,6 +450,13 @@ const createStyles = theme =>
       width: wp(70),
       fontFamily: fontFamily.playfair_semiBold,
       color: theme?.text,
+    },
+    termsDetails: {
+      fontSize: fontSizes.sm,
+      textAlign: 'left',
+      fontFamily: fontFamily.poppins_medium,
+      color: theme?.text,
+      lineHeight: ms(20),
     },
 
     subtitle: {

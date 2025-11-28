@@ -11,7 +11,7 @@ import {ms, s} from '../../../utils/responsive';
 import {useTheme} from '../../../context/ThemeContext';
 import {ICONS, IMAGES} from '../../../theme/colors';
 import {fontFamily, fontSizes} from '../../../theme/typography';
-import { goBack } from '../../../utils/rootNavigation';
+import {goBack} from '../../../utils/rootNavigation';
 
 export default function SubHeader({
   onPressRightIcon,
@@ -26,16 +26,22 @@ export default function SubHeader({
 
   return (
     <View style={[styles.container]}>
-      <TouchableOpacity onPress={onPressLeftIcon ? onPressLeftIcon : ()=> goBack()} style={styles.backCircle}>
+      <TouchableOpacity
+        onPress={onPressLeftIcon ? onPressLeftIcon : () => goBack()}
+        style={styles.backCircle}>
         <Image source={leftIcon ?? ICONS.back} style={styles.back} />
       </TouchableOpacity>
       <Text style={styles.headerText}>{centerlabel}</Text>
-      {hideRigthIcon ?         <TouchableOpacity onPress={()=>{}} style={styles.notiContPlaceholder}/>: (
+      {hideRigthIcon ? (
+        <TouchableOpacity
+          onPress={() => {}}
+          style={styles.notiContPlaceholder}
+        />
+      ) : (
         <TouchableOpacity onPress={onPressRightIcon} style={styles.notiCont}>
           <Image source={rightIcon ?? ICONS.bell} style={styles.bell} />
         </TouchableOpacity>
       )}
-      
     </View>
   );
 }

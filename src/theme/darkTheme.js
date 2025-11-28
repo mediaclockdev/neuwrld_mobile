@@ -12,6 +12,7 @@ export const darkTheme = {
   primary_shade: colors.primary_shade,
   text_color: colors.cream,           // lighter warm text
   input_text: colors.input_text,
+  blue:colors.blue,
   form_border: '#5A5A5A',    
   gray:colors.gray         // subtle border in dark mode
 };

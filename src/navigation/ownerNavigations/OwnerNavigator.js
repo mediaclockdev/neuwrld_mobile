@@ -1,7 +1,7 @@
 import {View, Text} from 'react-native';
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import Dashboard from '../../features/appScreens/screens/Dashboard';
+import Dashboard from '../../features/appScreens/userDashboard/Dashboard';
 import MyTabs from './MyTabs';
 const Stack = createStackNavigator();
 

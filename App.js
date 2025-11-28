@@ -16,8 +16,8 @@ const App = () => {
         <SafeAreaProvider>
           {/* StatusBar - works with notch/dynamic island */}
           <StatusBar
-            barStyle={'light-content'}
-            // barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'}
+            // barStyle={'light-content'}
+            barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'}
             backgroundColor="transparent" // keep transparent for notch
             translucent={true}
           />
@@ -26,7 +26,7 @@ const App = () => {
           <SafeAreaView
             // style={{flex: 1, backgroundColor: '#E5E5E5'}} // murcury
             // style={{flex: 1, backgroundColor: '#2C2C2C'}} // charcole
-            style={{flex: 1, backgroundColor: theme.background}}
+            style={{flex: 1, backgroundColor: theme.backgroundColor}}
             edges={['top', 'left', 'right', 'bottom']} // respect all safe areas
           >
 

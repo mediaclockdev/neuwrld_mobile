@@ -12,6 +12,7 @@ export const lightTheme = {
   text_color: colors.text,
   input_text: colors.input_text,
   form_border: colors.form_border,
-    gray:colors.gray         // subtle border in dark mode
+  blue:colors.blue,
+  gray:colors.gray         // subtle border in dark mode
 
 };

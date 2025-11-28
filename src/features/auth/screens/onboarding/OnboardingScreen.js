@@ -16,6 +16,7 @@ import {hp, ms, wp} from '../../../../utils/responsive';
 import {useTheme} from '../../../../context/ThemeContext';
 import {createStyles} from './styles';
 import {setUser} from '../../../../utils/authStorage';
+import {navigate} from '../../../../utils/rootNavigation';
 
 const slides = [
   {
@@ -152,7 +153,7 @@ const OnboardingScreen = ({navigation}) => {
       {/* Skip */}
       <TouchableOpacity
         style={styles.skipBtn}
-        onPress={() => setUser({userType: 'guest'})}>
+        onPress={() => navigate('Signup')}>
         <Text style={styles.skipText}>Skip</Text>
       </TouchableOpacity>
 

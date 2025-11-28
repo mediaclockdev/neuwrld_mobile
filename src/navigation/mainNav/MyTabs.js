@@ -13,9 +13,9 @@ import {BlurView} from '@react-native-community/blur';
 import {ICONS} from '../../theme/colors';
 import {s, rr, vs, ms} from '../../utils/responsive';
 import {useTheme} from '../../context/ThemeContext';
-import Dashboard from '../../features/appScreens/screens/Dashboard';
+import Dashboard from '../../features/appScreens/userDashboard/Dashboard';
 import Wishlist from '../../features/appScreens/screens/Wishlist';
-import Category from '../../features/appScreens/screens/Category';
+import Categories from '../../features/appScreens/screens/Categories';
 import Cart from '../../features/appScreens/screens/Cart';
 import UserProfile from '../../features/appScreens/userProfile/UserProfile';
 
@@ -87,7 +87,7 @@ export default function MyTabs() {
           let iconName;
           if (route.name === 'Home') iconName = ICONS.home;
           else if (route.name === 'Wishlist') iconName = ICONS.wishlistList;
-          else if (route.name === 'Category') iconName = ICONS.category;
+          else if (route.name === 'Categories') iconName = ICONS.category;
           else if (route.name === 'Cart') iconName = ICONS.add_to_cart;
           else if (route.name === 'Profile') iconName = ICONS.user;
           const color = focused ? theme?.background : theme?.text;
@@ -130,7 +130,7 @@ export default function MyTabs() {
       tabBar={props => <CustomTabBar {...props} />}>
       <Tab.Screen name="Home" component={Dashboard} />
       <Tab.Screen name="Wishlist" component={Wishlist} />
-      <Tab.Screen name="Category" component={Category} />
+      <Tab.Screen name="Categories" component={Categories} />
       <Tab.Screen name="Cart" component={Cart} />
       <Tab.Screen name="Profile" component={UserProfile} />
     </Tab.Navigator>

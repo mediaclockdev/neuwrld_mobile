@@ -5,28 +5,53 @@ const initialState = {
   token: null,
   error: null,
   isLoading: true,
+  isDataSubmitting: false,
   loginResponse: {},
   guestUser: '',
+  isRegisterSuccess: false,
 };
 
 const AuthSlice = createSlice({
   name: 'Auth',
   initialState: initialState,
   reducers: {
-    tokenRequest(state, action) {
+    signInRequest(state, action) {
       state.auth_status = action.type;
       state.isLoading = true;
+      state.isDataSubmitting = true;
+
     },
-    tokenSuccess(state, action) {
+    signInSuccess(state, action) {
       state.auth_status = action.type;
-      console.log('tokenSuccess >>>>>>>>>>>>>>>>.', action.payload);
       state.isLoading = false;
       state.token = action?.payload?.userToken ?? null;
+      state.isDataSubmitting = false;
     },
-    tokenFailure(state, action) {
+    signInFailure(state, action) {
       state.auth_status = action.type;
       state.isLoading = false;
       state.error = action.payload;
+    },
+
+    signUpRequest(state, action) {
+      state.auth_status = action.type;
+      state.isLoading = true;
+      state.isDataSubmitting = true;
+      state.isRegisterSuccess = false;
+    },
+    signUpSuccess(state, action) {
+      state.auth_status = action.type;
+      state.isLoading = false;
+      state.isDataSubmitting = false;
+      state.isRegisterSuccess = true;
+      // state.token = action?.payload?.userToken ?? null;
+    },
+    signUpFailure(state, action) {
+      state.auth_status = action.type;
+      state.isLoading = false;
+      state.isDataSubmitting = false;
+      state.error = action.payload;
+      state.isRegisterSuccess = false;
     },
 
     userLogout(state, action) {
@@ -45,15 +70,16 @@ const AuthSlice = createSlice({
 });
 
 export const {
- 
-
-  tokenRequest,
-  tokenSuccess,
-  tokenFailure,
+  signInRequest,
+  signInSuccess,
+  signInFailure,
 
   AddGuestUser,
   RemoveGuestUser,
   userLogout,
- 
+
+  signUpRequest,
+  signUpSuccess,
+  signUpFailure,
 } = AuthSlice.actions;
 export default AuthSlice.reducer;

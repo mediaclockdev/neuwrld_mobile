@@ -1,0 +1,1 @@
+export const FIT_ROOM_KEY = 'aac0f7803c5f4041b5a5232c2f6bfe7d81aa9f644e01b6823b3571045ecfe403'
