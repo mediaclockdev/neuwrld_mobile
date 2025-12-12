@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
     height: vs(80),
     marginBottom: vs(10),
     resizeMode: 'contain',
+    borderRadius:100
   },
   title: {
     fontSize: fontSizes.lg,

@@ -9,7 +9,7 @@ import {
   Image,
   FlatList,
 } from 'react-native';
-import React, {useCallback, useRef} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import CustomHeader from '../../../components/CustomHeader';
 import {hp, ms, rr, s, vs, wp} from '../../../utils/responsive';
@@ -23,51 +23,110 @@ import {categories, products} from '../../../utils/globalJson';
 import {navigate} from '../../../utils/rootNavigation';
 import {useDispatch, useSelector} from 'react-redux';
 import {useFocusEffect} from '@react-navigation/native';
-import {getCustomerDashRequest, getProductDetailsRequest} from '../appReducer';
+import {
+  addToWishlistRequest,
+  getCustomerDashRequest,
+  getProductDetailsRequest,
+  getProductRequest,
+} from '../appReducer';
 import {IMG_URL} from '../../../api/apiClient';
 import DashboardPlaceholder from '../Skeleton/DashboardPlaceholder';
 import AppImage from '../components/AppImage';
 import {optimizedImage} from '../../../utils/ImageUtils';
-
+import {
+  animateItemAppear,
+  animateItemPress,
+  animateScreenEnter,
+} from '../../../utils/animations';
+import {updateUserAuthTogle} from '../../auth/authReducer';
+import {usePopup} from '../../../context/PopupContext';
 const Dashboard = () => {
   const {theme} = useTheme();
   const styles = createStyles(theme);
 
   const {customerDash, isLoading} = useSelector(state => state.App);
-
   const dispatch = useDispatch();
+  const {isGuest} = useSelector(state => state.Auth);
+  const [isAuthAction, serIsAuthAction] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
+      // Animate entire screen on mount
+      animateScreenEnter();
       dispatch(getCustomerDashRequest());
-    }, [dispatch]),
+    }, []),
   );
+
+  const {showPopup} = usePopup();
+  useEffect(() => {
+    if (isGuest && isAuthAction) {
+      showPopup({
+        type: 'warning',
+        title: 'Hey There!',
+        message:
+          'Please sing up to use this ammezing feature ,and experience the world of fashion   🎉',
+        confirmText: 'Sign up to explore',
+        cancelText: 'Cancle',
+        showCancel: true,
+        onConfirm: () => (navigate('Signup'), serIsAuthAction(false)),
+        onCancel: () => serIsAuthAction(false),
+      });
+    }
+  }, [isAuthAction]);
 
   const _handleProductClick = item => {
     dispatch(getProductDetailsRequest(item?.product_sku));
   };
 
   const handleCategory = item => {
-    
+    const id = item?.slug;
+    dispatch(getProductRequest(id));
+  };
+  const handleWishlist = item => {
+    if (isGuest) {
+      serIsAuthAction(true);
+      return;
+    } else {
+      let screen = 'dashboard';
+      let payload = {
+        product_variant_id: item?.product_id,
+        is_saved_for_later: 1,
+        quantity: 1,
+      };
+      dispatch(addToWishlistRequest({payload, screen}));
+    }
   };
 
-  const _renderproduct = ({item, index}) => {
+  const ProductCard = ({item, index}) => {
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        animateItemAppear();
+      }, index * 50); // Stagger animation
+
+      return () => clearTimeout(timer);
+    }, [index]);
+
     return (
       <TouchableOpacity
         style={styles.card}
         activeOpacity={0.85}
         onPress={() => {
+          animateItemPress();
           _handleProductClick(item);
         }}>
         {/* PRODUCT IMAGE */}
         <View style={styles.imageBox}>
-          <TouchableOpacity style={styles.heart}>
-            <Text
-              style={{
-                color: item?.is_in_wishlist ? theme?.primary_color : '#aaa',
-              }}>
-              🤍
-            </Text>
+          <TouchableOpacity
+            onPress={() => {
+              handleWishlist(item);
+            }}
+            style={styles.heart}>
+            <Image
+              source={
+                item?.is_in_wishlist ? ICONS.adedWishlist : ICONS.wishlistList
+              }
+              style={styles.wishlistListIcon}
+            />
           </TouchableOpacity>
           <AppImage
             uri={item?.image}
@@ -162,22 +221,51 @@ const Dashboard = () => {
             </View>
           ))}
         </View>
-        <View
-          style={[
-            styles.headerRow,
-            {
-              marginVertical: ms(10),
-            },
-          ]}>
-          <Text style={styles.headerText}>Most Popular</Text>
-        </View>
 
         <FlatList
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View
+              style={[
+                styles.headerRow,
+                {
+                  marginVertical: ms(10),
+                },
+              ]}>
+              <Text style={styles.headerText}>Most Popular</Text>
+            </View>
+          }
           style={{marginTop: vs(6)}}
           data={customerDash?.latest_products}
           keyExtractor={({item, index}) => String(index)}
-          renderItem={_renderproduct}
+          renderItem={({item, index}) => (
+            <ProductCard item={item} index={index} />
+          )}
+          // renderItem={_renderproduct}
+          numColumns={2}
+          scrollEnabled={false}
+          ListFooterComponent={<View style={styles.devider} />}
+        />
+
+        <FlatList
+          ListHeaderComponent={
+            <View
+              style={[
+                styles.headerRow,
+                {
+                  marginVertical: ms(10),
+                },
+              ]}>
+              <Text style={styles.headerText}>Recommended Propduct</Text>
+            </View>
+          }
+          showsVerticalScrollIndicator={false}
+          style={{marginTop: vs(6)}}
+          data={customerDash?.recommended_products}
+          keyExtractor={({item, index}) => String(index)}
+          renderItem={({item, index}) => (
+            <ProductCard item={item} index={index} />
+          )}
           numColumns={2}
           scrollEnabled={false}
           ListFooterComponent={<View style={styles.devider} />}
@@ -203,6 +291,12 @@ const createStyles = theme =>
       width: ms(25),
       height: ms(25),
       resizeMode: 'contain',
+    },
+    wishlistListIcon: {
+      width: '80%',
+      height: '80%',
+      resizeMode: 'contain',
+      tintColor: theme?.primary_color,
     },
     headerRow: {
       flexDirection: 'row',
@@ -345,13 +439,14 @@ const createStyles = theme =>
       position: 'absolute',
       top: ms(6),
       right: ms(6),
-      backgroundColor: theme?.background,
+      backgroundColor: theme?.primary_shade,
       borderRadius: rr(30),
-      width: ms(30),
-      height: ms(30),
+      width: ms(32),
+      height: ms(32),
       justifyContent: 'center',
       alignItems: 'center',
       elevation: 2,
       zIndex: +100,
+      padding: ms(2),
     },
   });

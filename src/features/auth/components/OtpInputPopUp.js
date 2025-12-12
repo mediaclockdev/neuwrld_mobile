@@ -6,17 +6,36 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, {useRef, useState} from 'react';
+import React, {useRef, useState ,useEffect} from 'react';
 import Modal from 'react-native-modal';
 import {ms, vs} from '../../../utils/responsive';
 import CustomButton from '../../../components/CustomButton';
 import {fontFamily, fontSizes} from '../../../theme/typography';
 
-const OtpInputPopUp = ({isOtpModalVisible, onBackdropPress, submit}) => {
-  const [otp, setOtp] = useState(['', '', '', '']);
+const OtpInputPopUp = ({
+  isOtpModalVisible,
+  onBackdropPress,
+  submit,
+  type,
+  loading,
+}) => {
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [modal, setModal] = useState(true);
   const [otpError, setOtpError] = useState('');
-  const inputs = [useRef(null), useRef(null), useRef(null), useRef(null)];
+  const inputs = [
+    useRef(null),
+    useRef(null),
+    useRef(null),
+    useRef(null),
+    useRef(null),
+    useRef(null),
+  ];
+
+  useEffect(() => {
+    if (isOtpModalVisible) {
+      setOtp(['', '', '', '', '', '']);
+    }
+  }, [isOtpModalVisible]);
 
   const handleChange = (text, index) => {
     if (/^\d$/.test(text) || text === '') {
@@ -25,7 +44,7 @@ const OtpInputPopUp = ({isOtpModalVisible, onBackdropPress, submit}) => {
       setOtp(newOtp);
 
       // Move to next input
-      if (text !== '' && index < 3) {
+      if (text !== '' && index < 5) {
         inputs[index + 1].current.focus();
       }
 
@@ -38,11 +57,11 @@ const OtpInputPopUp = ({isOtpModalVisible, onBackdropPress, submit}) => {
 
   const handleVerifyOtp = () => {
     const enteredOtp = otp.join('');
-    if (enteredOtp.length !== 4) {
-      setOtpError('Please enter all 4 digits');
+    if (enteredOtp.length !== 6) {
+      setOtpError('Please enter all 6 digits');
       return;
-    } else if (enteredOtp?.length == 4) {
-      setModal(false);
+    } else if (enteredOtp?.length == 6) {
+      // setModal(false);
       setOtpError('');
     }
     submit(enteredOtp);
@@ -70,8 +89,9 @@ const OtpInputPopUp = ({isOtpModalVisible, onBackdropPress, submit}) => {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              We've sent a 4-digit verification code to your number . Please
-              check your messages and enter the code below to continue.
+              We've sent a 6-digit verification code to your{' '}
+              {type == 'Phone' ? 'number' : 'email'} . Please check and enter
+              the code below to continue.
             </Text>
             <View style={styles.otpContainer}>
               {otp.map((digit, index) => (
@@ -87,7 +107,11 @@ const OtpInputPopUp = ({isOtpModalVisible, onBackdropPress, submit}) => {
               ))}
             </View>
             {otpError && <Text style={{color: 'red'}}>{otpError}</Text>}
-            <CustomButton title="Verify OTP" onPress={handleVerifyOtp} />
+            <CustomButton
+              title="Verify OTP"
+              loading={loading}
+              onPress={handleVerifyOtp}
+            />
           </View>
         </KeyboardAvoidingView>
       </Modal>

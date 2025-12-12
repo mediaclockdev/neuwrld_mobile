@@ -1,6 +1,6 @@
-import {setItem, getItem, removeItem, clearAll} from './storage';
+import { setItem, getItem, removeItem, clearAll } from './storage'; // Your base MMKV or AsyncStorage wrapper
 
-// Keys for storage
+// Storage keys
 const KEYS = {
   USER: 'user',
   TOKEN: 'authToken',
@@ -8,15 +8,21 @@ const KEYS = {
   IS_LOGGED_IN: 'isLoggedIn',
 };
 
+/* ==========================================================
+   USER HANDLING
+========================================================== */
+
 // Save user object
 export const setUser = (user) => {
-  setItem(KEYS.USER, user);
-  setItem(KEYS.IS_LOGGED_IN, true);
+  if (user) {
+    setItem(KEYS.USER, JSON.stringify(user));
+    setItem(KEYS.IS_LOGGED_IN, true);
+  }
 };
 
 // Get user object
-export const getUser = () => {
-  return getItem(KEYS.USER, null);
+export const getUser = async () => {
+    return await getItem(KEYS.USER);
 };
 
 // Remove user
@@ -25,70 +31,60 @@ export const removeUser = () => {
   removeItem(KEYS.IS_LOGGED_IN);
 };
 
+/* ==========================================================
+   TOKEN HANDLING
+========================================================== */
+
 // Save token
 export const setToken = (token) => {
-  setItem(KEYS.TOKEN, token);
+  if (token) setItem(KEYS.TOKEN, token);
 };
 
 // Get token
-export const getToken = () => {
-  return getItem(KEYS.TOKEN, null);
+export const getToken = async () => {
+  return await getItem(KEYS.TOKEN);
 };
 
-// Save refresh token (optional)
+// Remove token
+export const removeToken = () => {
+  removeItem(KEYS.TOKEN);
+};
+
+// Save refresh token
 export const setRefreshToken = (refreshToken) => {
-  setItem(KEYS.REFRESH_TOKEN, refreshToken);
+  if (refreshToken) setItem(KEYS.REFRESH_TOKEN, refreshToken);
 };
 
 // Get refresh token
-export const getRefreshToken = () => {
-  return getItem(KEYS.REFRESH_TOKEN, null);
+export const getRefreshToken = async () => {
+  return await getItem(KEYS.REFRESH_TOKEN);
 };
 
-// Clear only auth-related data (not entire app storage)
+// Remove refresh token
+export const removeRefreshToken = () => {
+  removeItem(KEYS.REFRESH_TOKEN);
+};
+
+/* ==========================================================
+   AUTH STATE MANAGEMENT
+========================================================== */
+
+// Clear only auth-related data
 export const clearAuth = () => {
   removeUser();
-  removeItem(KEYS.TOKEN);
-  removeItem(KEYS.REFRESH_TOKEN);
+  removeToken();
+  removeRefreshToken();
   removeItem(KEYS.IS_LOGGED_IN);
 };
 
-// Check if logged in
-export const isLoggedIn = () => {
-  return getItem(KEYS.IS_LOGGED_IN, false);
+// Check if user is logged in
+export const isLoggedIn = async () => {
+  const loggedIn = await getItem(KEYS.IS_LOGGED_IN);
+  return loggedIn === true || loggedIn === 'true';
 };
 
-// Logout (clear everything)
+// Logout (clear all auth data)
 export const logout = () => {
   clearAuth();
+  console.log('🚪 Logged out successfully, auth cleared.');
 };
-
-
-//example usage:
-// import {
-//   setUser,
-//   getUser,
-//   setToken,
-//   getToken,
-//   isLoggedIn,
-//   logout,
-// } from '../storage/AuthStorage';
-
-// // Save user + token
-// setUser({id: 1, name: 'Saurav'});
-// setToken('abc123');
-
-// // Get data
-// const user = getUser();
-// const token = getToken();
-// console.log('User:', user);
-// console.log('Token:', token);
-
-// // Check login
-// if (isLoggedIn()) {
-//   console.log('User is logged in');
-// }
-
-// // Logout
-// logout();
-

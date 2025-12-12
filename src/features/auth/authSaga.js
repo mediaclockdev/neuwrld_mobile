@@ -1,8 +1,14 @@
 import {call, put, takeLatest, all} from 'redux-saga/effects';
 import {postApi} from '../../api/requestApi';
 import {ALL_APi_LIST} from '../../utils/apis';
-import {getErrorMessage} from '../../utils/errorHandler';
-import {signInFailure, signInSuccess, signUpFailure, signUpRequest, signUpSuccess} from './authReducer';
+import {errorHandler} from '../../utils/errorHandler';
+import {
+  signInFailure,
+  signInSuccess,
+  signUpFailure,
+  signUpRequest,
+  signUpSuccess,
+} from './authReducer';
 
 // Worker Saga
 function* signUpRequestSaga(action) {
@@ -10,11 +16,15 @@ function* signUpRequestSaga(action) {
     const response = yield call(postApi, ALL_APi_LIST.register, action.payload);
     yield put(signUpSuccess(response?.data?.data || {}));
   } catch (error) {
-    getErrorMessage(
-      error?.response?.data?.response_code,
-      error?.response?.data?.message,
+    const code = error?.response?.status;
+    const message = error?.response?.data?.message;
+    errorHandler(code, message, 'signUpFailure');
+    yield put(
+      signUpFailure({
+        status: code,
+        message: message || 'Something went wrong',
+      }),
     );
-    yield put(signUpFailure(error?.response || error));
   }
 }
 
@@ -23,11 +33,14 @@ function* siginInRequestSaga(action) {
     const response = yield call(postApi, ALL_APi_LIST.login, action.payload);
     yield put(signInSuccess(response?.data?.data || {}));
   } catch (error) {
-    getErrorMessage(
-      error?.response?.data?.response_code,
-      error?.response?.data?.message,
+    const message = error?.response?.data?.message;
+    errorHandler(code, message, 'loginRequest');
+    yield put(
+      signInFailure({
+        status: code,
+        message: message || 'Something went wrong',
+      }),
     );
-    yield put(signInFailure(error?.response || error));
   }
 }
 

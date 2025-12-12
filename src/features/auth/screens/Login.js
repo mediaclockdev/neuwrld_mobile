@@ -42,7 +42,7 @@ const Login = ({navigation}) => {
   );
 
   useFocusEffect(onFocusEffect); // register callback to focus events
-  const [loginType, setLoginType] = useState('email');
+  const [loginType, setLoginType] = useState('phone');
   const [loading, setLoading] = useState(false);
   const [mobile, setMobile] = useState('');
   const [mobileerr, setMobileError] = useState('');

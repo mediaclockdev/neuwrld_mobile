@@ -1,12 +1,4 @@
-
-
-
-
-
-
-
-
-  import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -31,6 +23,7 @@ import {usePopup} from '../../../context/PopupContext';
 import ReusableModal from '../../appScreens/components/ReusableModal';
 import {loerms_ipsum} from '../../../utils/globalJson';
 import {useDispatch, useSelector} from 'react-redux';
+import Header from '../../../components/Header';
 
 const emailSchema = Yup.object().shape({
   fullName: Yup.string().required('Full name is required'),
@@ -171,131 +164,123 @@ const UpdateProfile = ({navigation}) => {
 
   return (
     <AvoidSoftInputView style={styles.parent} behavior="padding">
+      <Header />
       <ScrollView contentContainerStyle={styles.container}>
-        {/* <View style={styles.logoWrapper}>
-          <Image
-            source={IMAGES.logo} // add your Handova logo in assets
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View> */}
-        <Text style={styles.title}>Create An Account</Text>
+        <Text style={styles.title}>Update Your Account</Text>
         <Text style={[styles.subtitle]}>
-          Fill your details below and Join us to discover amazing fashion
+          Fill your details below and be the part of Neuwrld
         </Text>
 
-       
-          <View style={{width: wp(90)}}>
-            <Controller
-              control={control}
-              name="fullName"
-              render={({field: {onChange, value, onBlur}}) => (
-                <CustomTextInput
-                  placeholder="Full Name"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  icon={ICONS.user}
-                  error={errors.fullName?.message}
-                />
-              )}
-            />
-            <Controller
-              control={control}
-              name="email"
-              render={({field: {onChange, value, onBlur}}) => (
-                <CustomTextInput
-                  placeholder="Email"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  icon={ICONS.email}
-                  keyboardType="email-address"
-                  error={errors.email?.message}
-                />
-              )}
-            />
-            <Controller
-              control={control}
-              name="password"
-              render={({field: {onChange, value, onBlur}}) => (
-                <CustomTextInput
-                  placeholder="Password"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  icon={ICONS.lock}
-                  secureTextEntry
-                  error={errors.password?.message}
-                />
-              )}
-            />
-            <Controller
-              control={control}
-              name="confirmPassword"
-              render={({field: {onChange, value, onBlur}}) => (
-                <CustomTextInput
-                  placeholder="Confirm Password"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  icon={ICONS.lock}
-                  secureTextEntry
-                  error={errors.confirmPassword?.message}
-                />
-              )}
-            />
-            <Controller
-              control={control}
-              name="terms"
-              render={({field: {onChange, value}}) => (
-                <TouchableOpacity
-                  style={styles.checkboxrow}
-                  onPress={() => onChange(!value)} // toggle checkbox
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      {
-                        borderColor: value ? theme?.primary_color : 'gray',
-                      },
-                    ]}>
-                    {value && (
-                      <Image
-                        source={ICONS.check}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          tintColor: theme?.primary_color,
-                        }}
-                        resizeMode="contain"
-                      />
-                    )}
-                  </View>
-                  <Text style={styles.terms}>
-                    I accept the
-                    <Text
-                      onPress={() => {
-                        setShowTermsModal(true);
-                      }}
-                      style={{color: '#3847ff'}}>
-                      {' '}
-                      Terms & Conditions
-                    </Text>
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-            {errors.terms && (
-              <Text style={{color: 'red'}}>{errors.terms.message}</Text>
+        <View style={{width: wp(90)}}>
+          <Controller
+            control={control}
+            name="fullName"
+            render={({field: {onChange, value, onBlur}}) => (
+              <CustomTextInput
+                placeholder="Full Name"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                icon={ICONS.user}
+                error={errors.fullName?.message}
+              />
             )}
-            <CustomButton
-              title="Sign Up"
-              onPress={handleSubmit(onSubmit)}
-              loading={isDataSubmitting}
-            />
-          </View>
- 
+          />
+          <Controller
+            control={control}
+            name="email"
+            render={({field: {onChange, value, onBlur}}) => (
+              <CustomTextInput
+                placeholder="Email"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                icon={ICONS.email}
+                keyboardType="email-address"
+                error={errors.email?.message}
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="password"
+            render={({field: {onChange, value, onBlur}}) => (
+              <CustomTextInput
+                placeholder="Password"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                icon={ICONS.lock}
+                secureTextEntry
+                error={errors.password?.message}
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="confirmPassword"
+            render={({field: {onChange, value, onBlur}}) => (
+              <CustomTextInput
+                placeholder="Confirm Password"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                icon={ICONS.lock}
+                secureTextEntry
+                error={errors.confirmPassword?.message}
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="terms"
+            render={({field: {onChange, value}}) => (
+              <TouchableOpacity
+                style={styles.checkboxrow}
+                onPress={() => onChange(!value)} // toggle checkbox
+              >
+                <View
+                  style={[
+                    styles.checkbox,
+                    {
+                      borderColor: value ? theme?.primary_color : 'gray',
+                    },
+                  ]}>
+                  {value && (
+                    <Image
+                      source={ICONS.check}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        tintColor: theme?.primary_color,
+                      }}
+                      resizeMode="contain"
+                    />
+                  )}
+                </View>
+                <Text style={styles.terms}>
+                  I accept the
+                  <Text
+                    onPress={() => {
+                      setShowTermsModal(true);
+                    }}
+                    style={{color: '#3847ff'}}>
+                    {' '}
+                    Terms & Conditions
+                  </Text>
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+          {errors.terms && (
+            <Text style={{color: 'red'}}>{errors.terms.message}</Text>
+          )}
+          <CustomButton
+            title="Sign Up"
+            onPress={handleSubmit(onSubmit)}
+            loading={isDataSubmitting}
+          />
+        </View>
 
         <View style={styles.rowfooter}>
           <Text
@@ -326,7 +311,7 @@ const UpdateProfile = ({navigation}) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    
+
       {/* // terms and Conditions popup // */}
       <ReusableModal
         isVisible={showTermsModal}

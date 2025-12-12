@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native';
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {getItem} from '../../../utils/storage';
 import CartPlaceholder from '../Skeleton/CartPlaceholder';
@@ -16,54 +16,139 @@ import {useTheme} from '../../../context/ThemeContext';
 import {hp, ms, s, vs} from '../../../utils/responsive';
 import {fontFamily, fontSizes} from '../../../theme/typography';
 import CustomButton from '../../../components/CustomButton';
-import {navigate} from '../../../utils/rootNavigation';
+import {goBack, navigate} from '../../../utils/rootNavigation';
+import {useDispatch, useSelector} from 'react-redux';
+import {
+  getCartRequest,
+  getCouponRequest,
+  handleCartRemoveRequest,
+} from '../appReducer';
+import {postApi} from '../../../api/requestApi';
+import {usePopup} from '../../../context/PopupContext';
 
 const Cart = () => {
-  const [cart, setCart] = useState(null); // null = loading state
+  const {customerDash, isLoading, appliedCoupon, cartData} = useSelector(
+    state => state.App,
+  );
+
+  const {isGuest} = useSelector(state => state.Auth);
+  const [showPopupVisible, setShowPopupVisible] = useState(true);
+
+  const dispatch = useDispatch();
+  const [btnLoader, setBtnLoader] = useState(false); // null = loading state
+  const [showModal, setShowModal] = useState({
+    visible: false,
+    item: null,
+  }); // null = loading state
   const {theme} = useTheme();
   const styles = createStyles(theme);
-  const getProducts = async () => {
-    let product = await getItem('cart');
-    setCart(product ?? 'none');
+  const {showPopup} = usePopup();
+  const [promocode, setPromocode] = useState(appliedCoupon?.code ?? '');
+
+  const _handleQuantity = (item, isIncrement) => {
+    let prevQty = isIncrement
+      ? Number(item?.quantity) + 1
+      : Number(item?.quantity) - 1;
+    let payload = {
+      product_variant_id: item?.product_variant_id,
+      quantity: prevQty,
+    };
+    if (prevQty < 1) {
+      setShowModal({
+        ...showModal,
+        visible: true,
+        item: item,
+      });
+      return;
+    } else {
+      setBtnLoader(true);
+
+      postApi('update-quantity', payload)
+        .then(res => {
+          if (res?.data) {
+            dispatch(getCartRequest());
+          }
+          setBtnLoader(false);
+        })
+        .catch(err => {
+          console.log('er =>>>', err?.response), setBtnLoader(false);
+        });
+    }
   };
-  let totalPrice = 0;
 
   useFocusEffect(
     useCallback(() => {
-      setTimeout(() => {
-        getProducts();
-      }, 1500);
-    }, []),
+      if (isGuest && showPopupVisible) {
+        showPopup({
+          type: 'warning',
+          title: 'Hey There!',
+          message:
+            'Please sing up to use this ammezing feature ,and experience the world of fashion   🎉',
+          confirmText: 'Sign up to explore',
+          cancelText: 'Cancle',
+          showCancel: true,
+          onConfirm: () => (navigate('Signup'), setShowPopupVisible(false)),
+          onCancel: () => goBack(),
+        });
+      } else {
+        dispatch(getCartRequest(appliedCoupon?.code || ''));
+      }
+    }, [appliedCoupon]),
   );
 
-  if (cart === null) {
-    return <CartPlaceholder />;
-  }
+  useEffect(() => {
+    if (showModal?.visible) {
+      showPopup({
+        type: 'warning',
+        title: 'Hey There!',
+        message: 'Are you sure to remove this item from your cart?',
+        confirmText: 'Remove from cart',
+        cancelText: 'Cancel',
+        showCancel: true,
+        onConfirm: () => {
+          dispatch(
+            handleCartRemoveRequest({
+              product_variant_id: showModal?.item?.product_variant_id,
+            }),
+          );
+          setShowModal({visible: false, item: null});
+        },
+        onCancel: () => {
+          setShowModal({visible: false, item: null});
+        },
+      });
+    }
+  }, [showModal.visible]);
 
   const _renderItem = ({item, index}) => {
     return (
-      <View key={item?.id} style={styles.cardRow}>
+      <View key={item?.product_variant_id} style={styles.cardRow}>
         <View style={styles.row}>
-          <Image
-            source={{uri: item?.productImage}}
-            style={styles.productImage}
-          />
-          <View style={{marginLeft: ms(10)}}>
-            <Text style={styles.title}>{item?.title}</Text>
+          <Image source={{uri: item?.image}} style={styles.productImage} />
+          <View style={{marginLeft: ms(10), maxWidth: '60%'}}>
+            <Text style={styles.title}>{item?.name}</Text>
             <Text style={styles.size}>
               Size : {item?.selectedSize ?? 'free size'} ,
-              <Text style={styles.qty}> Qty : 1</Text>
+              <Text style={styles.qty}> Qty : {item?.quantity}</Text>
             </Text>
             <Text style={styles.amount}>${item?.price}</Text>
           </View>
         </View>
         <View style={styles.qtyBtn}>
-          <TouchableOpacity style={styles.decBtn}>
+          <TouchableOpacity
+            onPress={() => {
+              _handleQuantity(item, false);
+            }}
+            style={styles.decBtn}>
             <Text style={styles.qtyText}>-</Text>
           </TouchableOpacity>
-          <Text style={styles.qtyText}>1</Text>
+          <Text style={styles.qtyText}>{item?.quantity}</Text>
 
-          <TouchableOpacity style={styles.incBtn}>
+          <TouchableOpacity
+            onPress={() => {
+              _handleQuantity(item, true);
+            }}
+            style={styles.incBtn}>
             <Text
               style={[
                 styles.qtyText,
@@ -78,65 +163,108 @@ const Cart = () => {
       </View>
     );
   };
-  return (
-    <View style={styles.parent}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.container}>
-        <Text style={styles.headerText}>My Cart</Text>
 
-        <FlatList
-          data={cart}
-          keyExtractor={({item, index}) => item?.id?.toString()}
-          renderItem={_renderItem}
-          scrollEnabled={false}
-          ListEmptyComponent={() => {
-            return <Text>Your cart is empty</Text>;
-          }}
-        />
+  const handlePromoCode = () => {};
+  if (isLoading) {
+    return <CartPlaceholder />;
+  } else {
+    return (
+      <View style={styles.parent}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.container}>
+          <Text style={styles.headerText}>My Cart</Text>
 
-        <View style={styles.amountCont}>
-          <View style={styles.promocodeinputwrapper}>
-            <TextInput style={styles.inputs} placeholder="promo code..." />
-            <TouchableOpacity style={styles.applyBtn}>
-              <Text style={styles.apply}>Apply</Text>
-            </TouchableOpacity>
-          </View>
+          <FlatList
+            data={cartData?.cart_items}
+            keyExtractor={(item, index) => item?.product_variant_id?.toString()}
+            renderItem={_renderItem}
+            scrollEnabled={false}
+            ListEmptyComponent={() => {
+              return (
+                <Text style={{color: theme?.text}}>Your cart is empty</Text>
+              );
+            }}
+          />
 
-          {/* // price breakup // */}
-          <View style={styles.rowamount}>
-            <Text style={styles.lable}>Total amount</Text>
-            <Text style={styles.value}>$300</Text>
-          </View>
-          <View style={styles.rowamount}>
-            <Text style={styles.lable}>Payable amount</Text>
-            <Text style={styles.value}>$300</Text>
-          </View>
-          <View style={styles.rowamount}>
-            <Text style={styles.lable}>Prpmo Code discound</Text>
-            <Text style={styles.value}>$0</Text>
-          </View>
+          {cartData?.cart_summary && (
+            <View style={styles.amountCont}>
+              <View style={styles.promocodeinputwrapper}>
+                <TextInput
+                  onChangeText={te => setPromocode(te)}
+                  style={styles.inputs}
+                  placeholder="promo code..."
+                  value={promocode}
+                />
+                <TouchableOpacity
+                  onPress={() => handlePromoCode()}
+                  style={styles.applyBtn}>
+                  <Text style={styles.apply}>
+                    {appliedCoupon?.code ? 'Applied' : 'Apply'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text
+                onPress={() => {
+                  dispatch(getCouponRequest());
+                  navigate('CouponList');
+                }}
+                style={styles.couponcode}>
+                View available coupon code
+              </Text>
 
-          <View style={styles.bottomCont}>
-            <View>
-              <Text style={styles.headerText}>Total Payable</Text>
-              <Text style={styles.totalAmount}>300$</Text>
+              {/* // price breakup // */}
+              <View style={styles.rowamount}>
+                <Text style={styles.lable}>Total amount</Text>
+                <Text style={styles.value}>
+                  {cartData?.cart_summary?.raw_subtotal}
+                </Text>
+              </View>
+              <View style={styles.rowamount}>
+                <Text style={styles.lable}>Tax diduction</Text>
+                <Text style={styles.value}>
+                  {cartData?.cart_summary?.total_tax}
+                </Text>
+              </View>
+              <View style={styles.rowamount}>
+                <Text style={styles.lable}>Prpmo Code discound</Text>
+                <Text style={styles.value}>
+                  {cartData?.cart_summary?.coupon_discount}
+                </Text>
+              </View>
+              <View style={styles.rowamount}>
+                <Text style={styles.lable}>Payable amount</Text>
+                <Text style={styles.value}>
+                  {cartData?.cart_summary?.final_amount}
+                </Text>
+              </View>
+
+              <View style={styles.bottomCont}>
+                <View>
+                  <Text style={styles.headerText}>Total Payable</Text>
+                  <Text style={styles.totalAmount}>
+                    {cartData?.cart_summary?.final_amount}
+                  </Text>
+                </View>
+                <CustomButton
+                  // onPress={() =>
+                  //   navigate('Checkout', {
+                  //     cartData: cart,
+                  //   })
+                  // }
+                  title={'Checkout'}
+                  loading={btnLoader}
+                  btnStyle={styles.checkoutBtn}
+                />
+              </View>
             </View>
-            <CustomButton
-              onPress={() =>
-                navigate('Checkout', {
-                  cartData: cart,
-                })
-              }
-              title={'Checkout'}
-              btnStyle={styles.checkoutBtn}
-            />
-          </View>
-        </View>
-        <View style={styles.devider} />
-      </ScrollView>
-    </View>
-  );
+          )}
+
+          <View style={styles.devider} />
+        </ScrollView>
+      </View>
+    );
+  }
 };
 
 export default Cart;
@@ -145,7 +273,6 @@ const createStyles = theme =>
   StyleSheet.create({
     parent: {
       flex: 1,
-      // backgroundColor: '#2C2C2C',
       backgroundColor: theme?.background,
     },
     container: {
@@ -181,10 +308,19 @@ const createStyles = theme =>
       borderRadius: ms(12),
     },
     title: {
-      fontSize: fontSizes.base,
+      fontSize: fontSizes.sm,
       color: theme.text,
       fontFamily: fontFamily.playfair_medium,
       lineHeight: ms(20),
+    },
+    couponcode: {
+      fontSize: fontSizes.sm,
+      color: theme.primary_color,
+      textDecorationLine: 'underline',
+
+      fontFamily: fontFamily.playfair_boldItalic,
+      paddingVertical: ms(10),
+      textAlign: 'right',
     },
     amount: {
       fontSize: fontSizes.sm,
@@ -254,7 +390,7 @@ const createStyles = theme =>
       marginVertical: vs(15),
       borderColor: theme?.primary_shade,
       justifyContent: 'space-between',
-      alignItems: 'center',
+      // alignItems: 'center',
     },
     promocodeinputwrapper: {
       width: '100%',
@@ -263,9 +399,11 @@ const createStyles = theme =>
       borderWidth: 0.6,
       borderRadius: ms(30),
       backgroundColor: theme?.primary_color,
+      height: s(40),
     },
     inputs: {
       width: '80%',
+      height: '100%',
       flexDirection: 'row',
       alignItems: 'center',
       borderWidth: 0.6,

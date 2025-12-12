@@ -7,6 +7,7 @@ export const darkTheme = {
   buttonBackground: colors.primary,   // keep brand visible in dark
   buttonText: colors.white,
   error: colors.error,
+  success: colors.green,
   section_background: colors.section_background_dark,
   primary_color: colors.primary,
   primary_shade: colors.primary_shade,

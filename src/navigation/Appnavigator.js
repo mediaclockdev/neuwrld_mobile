@@ -6,18 +6,16 @@ import AuthNavigator from './AuthNavigator';
 import SplashScreen from '../components/SplashScreen';
 import {getUser} from '../utils/authStorage';
 import MainStack from './mainNav/MainStack';
-import { navigationRef } from '../utils/rootNavigation';
+import {navigationRef} from '../utils/rootNavigation';
+import {useDispatch, useSelector} from 'react-redux';
 
 const Stack = createStackNavigator();
 
 const Appnavigator = () => {
   const [isAppReady, setIsAppReady] = useState(false);
-  const user = getUser();
-  console.log(user, 'user from app navigator');
-  //   const {token, ROLE} = useSelector(state => state.AuthReducer);
   //   const {userDetailRes, customerCallDetails, reciverJoined, isLoading} =
   //     useSelector(state => state.ProfileReducer);
-  //   const dispatch = useDispatch();
+  const dispatch = useDispatch();
   React.useEffect(() => {
     const timer = setTimeout(() => setIsAppReady(true), 1500);
     if (!isAppReady);
@@ -30,20 +28,13 @@ const Appnavigator = () => {
 
   // Root Navigation that decides role
   const RootNavigator = () => {
-    // const {isLoggedIn, role} = useSelector(state => state.auth);
-    const role = user?.userType;
-    // Temporary Logic until we have auth implemented
+    const {token, isGuest} = useSelector(state => state.Auth);
 
-   
-    if (!user) {
+    if (token || isGuest) {
       return <MainStack />;
     }
 
-    if (user) {
-      return <MainStack />;
-    }
-
-    return <MainStack />;
+    return <AuthNavigator />;
   };
 
   return (

@@ -17,6 +17,13 @@ import Notification from '../../features/appScreens/notification/Notification';
 import ProductList from '../../features/appScreens/Product/ProductList';
 import ProfileDetails from '../../features/appScreens/userProfile/ProfileDetails';
 import UserAvatar from '../../features/appScreens/userProfile/UserAvatar';
+import Intro from '../../features/auth/screens/Intro/Intro';
+import OnboardingScreen from '../../features/auth/screens/onboarding/OnboardingScreen';
+import Login from '../../features/auth/screens/Login';
+import Signup from '../../features/auth/screens/Signup';
+import CouponList from '../../features/appScreens/screens/CouponList';
+import PrivacyPolicy from '../../features/appScreens/userProfile/PrivacyPolicy';
+import HelpCenter from '../../features/appScreens/userProfile/HelpCenter';
 const Stack = createStackNavigator();
 
 export default function MainStack() {
@@ -41,6 +48,7 @@ export default function MainStack() {
   };
   return (
     <Stack.Navigator screenOptions={horizontalAnimation}>
+      
       <Stack.Screen
         name="MyTabs"
         options={{headerShown: false}}
@@ -117,6 +125,45 @@ export default function MainStack() {
         options={{headerShown: false}}
         component={UserAvatar}
       />
+
+      {/* // auth part // */}
+      <Stack.Screen
+        name="Intro"
+        options={{headerShown: false}}
+        component={Intro}
+      />
+      <Stack.Screen
+        name="OnboardingScreen"
+        options={{headerShown: false}}
+        component={OnboardingScreen}
+      />
+      <Stack.Screen
+        name="Login"
+        options={{headerShown: false}}
+        component={Login}
+      />
+
+      <Stack.Screen
+        name="Signup"
+        options={{headerShown: false}}
+        component={Signup}
+      />
+      <Stack.Screen
+        name="CouponList"
+        options={{headerShown: false}}
+        component={CouponList}
+      />
+      <Stack.Screen
+        name="PrivacyPolicy"
+        options={{headerShown: false}}
+        component={PrivacyPolicy}
+      />
+      <Stack.Screen
+        name="HelpCenter"
+        options={{headerShown: false}}
+        component={HelpCenter}
+      />
+
     </Stack.Navigator>
   );
 }

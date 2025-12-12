@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -30,18 +30,61 @@ import FilterByModule from '../components/FilterByModule';
 import CategorisPlaceholder from '../Skeleton/CategorisPlaceholder';
 import AppImage from '../components/AppImage';
 import NoProducts from '../../../components/NoProducts';
+import {usePopup} from '../../../context/PopupContext';
+import {postApi} from '../../../api/requestApi';
+import {ALL_APi_LIST} from '../../../utils/apis';
 
 const ProductList = () => {
   const {theme} = useTheme();
   const styles = createStyles(theme);
   const {isLoading, products} = useSelector(state => state.App);
+  const {isGuest} = useSelector(state => state.Auth);
+  const [isAuthAction, serIsAuthAction] = useState(false);
+
   const [showFilterModle, setShowFilterModle] = useState(false);
   const dispatch = useDispatch();
 
   const _handleProductClick = item => {
     dispatch(getProductDetailsRequest(item?.product_sku));
   };
-  
+
+  const handleWishlist = item => {
+    if (isGuest) {
+      serIsAuthAction(true);
+      return;
+    } else {
+      let payload = {
+        product_variant_id: item?.product_id,
+        is_saved_for_later: 1,
+        quantity: 1,
+      };
+      postApi(ALL_APi_LIST.wishlist, payload).then(res => {
+        if (res?.success == true) {
+          dispatch(getProductRequest(products?.category?.slug));
+        }
+        else {
+          
+        }
+      });
+    }
+  };
+
+  const {showPopup} = usePopup();
+  useEffect(() => {
+    if (isGuest && isAuthAction) {
+      showPopup({
+        type: 'warning',
+        title: 'Hey There!',
+        message:
+          'Please sing up to use this ammezing feature ,and experience the world of fashion   🎉',
+        confirmText: 'Sign up to explore',
+        cancelText: 'Cancle',
+        showCancel: true,
+        onConfirm: () => (navigate('Signup'), serIsAuthAction(false)),
+        onCancel: () => serIsAuthAction(false),
+      });
+    }
+  }, [isAuthAction]);
 
   const renderProduct = ({item, index}) => {
     return (
@@ -53,13 +96,17 @@ const ProductList = () => {
         }}>
         {/* PRODUCT IMAGE */}
         <View style={styles.imageBox}>
-          <TouchableOpacity style={styles.heart}>
-            <Text
-              style={{
-                color: item?.is_in_wishlist ? theme?.primary_color : '#aaa',
-              }}>
-              🤍
-            </Text>
+          <TouchableOpacity
+            onPress={() => {
+              handleWishlist(item);
+            }}
+            style={styles.heart}>
+            <Image
+              source={
+                item?.is_in_wishlist ? ICONS.adedWishlist : ICONS.wishlistList
+              }
+              style={styles.wishlistListIcon}
+            />
           </TouchableOpacity>
           <AppImage
             uri={item?.image}
@@ -136,8 +183,7 @@ const ProductList = () => {
         showsVerticalScrollIndicator={false}
         ListFooterComponent={<View style={{height: hp(5)}} />}
         contentContainerStyle={{padding: ms(15)}}
-          ListEmptyComponent={<NoProducts />}
-
+        ListEmptyComponent={<NoProducts />}
       />
 
       <FilterByModule
@@ -270,14 +316,22 @@ const createStyles = theme =>
       position: 'absolute',
       top: ms(6),
       right: ms(6),
-      backgroundColor: theme?.background,
+      backgroundColor: theme?.primary_shade,
       borderRadius: rr(30),
-      width: ms(30),
-      height: ms(30),
+      width: ms(32),
+      height: ms(32),
       justifyContent: 'center',
       alignItems: 'center',
       elevation: 2,
       zIndex: +100,
+      padding: ms(2),
+    },
+
+    wishlistListIcon: {
+      width: '80%',
+      height: '80%',
+      resizeMode: 'contain',
+      tintColor: theme?.primary_color,
     },
 
     productImage: {

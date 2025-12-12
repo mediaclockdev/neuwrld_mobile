@@ -18,36 +18,93 @@ import {navigate} from '../../../utils/rootNavigation';
 import LogoutSheet from '../components/LogoutPop';
 import {setUser} from '../../../utils/authStorage';
 import UploadMedia from '../components/UploadMedia';
+import {useSelector} from 'react-redux';
+import FastImage from '@d11/react-native-fast-image';
+import {usePopup} from '../../../context/PopupContext';
 
 const UserProfile = () => {
   const {theme} = useTheme();
   const styles = createStyles(theme);
+  const {customerDash, userdetails, isLoading} = useSelector(
+    state => state.App,
+  );
+
+  const {token, isGuest} = useSelector(state => state.Auth);
+  const [showPopupVisible, setShowPopupVisible] = useState(true);
 
   const [logoutVisible, setLogoutVisible] = useState(false);
   const [profileUpdateVisible, setProfileUpdateVisible] = useState(false);
   const [localPhoto, setLocalPhoto] = useState(null);
+  const {showPopup} = usePopup();
 
   const handleLogout = () => {
+    if (!token) {
+      navigate('Signup');
+    } else {
+      setLogoutVisible(true);
+    }
     // instead of rendering directly, just toggle visibility
-    setLogoutVisible(true);
   };
 
   const handleProfileImage = () => {
     // instead of rendering directly, just toggle visibility
     setProfileUpdateVisible(true);
   };
+
   const handleActions = item => {
-    item?.slug === 'settings'
-      ? navigate('Settings')
-      : item?.slug === 'orders'
-      ? navigate('MyOrdersScreen')
-      : item.slug === 'profile'
-      ? navigate('ProfileDetails')
-      : item?.slug === 'saved'
-      ? navigate('AddressScreen')
-      : item?.slug === 'logout'
-      ? handleLogout()
-      : null;
+    const isGuest = !token;
+
+    // Publicly accessible slugs
+    const publicRoutes = ['help', 'privacy', 'logout', 'about', 'contact'];
+
+    // Protected/private actions
+    const requiresAuth = !publicRoutes.includes(item?.slug);
+
+    // If user is guest and trying to access private screen
+    if (isGuest && requiresAuth) {
+      showPopup({
+        type: 'warning',
+        title: 'Hey There!',
+        message:
+          'Please sign up to use this amazing feature and experience the world of fashion 🎉',
+        confirmText: 'Sign up to explore',
+        cancelText: 'Cancel',
+        showCancel: true,
+        onConfirm: () => (navigate('Signup'), setShowPopupVisible(false)),
+        onCancel: () => setShowPopupVisible(false),
+      });
+      return;
+    }
+
+    // Navigation for all accessible actions
+    switch (item?.slug) {
+      case 'help':
+        navigate('HelpCenter');
+        break;
+      case 'privacy':
+        navigate('PrivacyPolicy');
+        break;
+      case 'settings':
+        navigate('Settings');
+        break;
+      case 'orders':
+        navigate('MyOrdersScreen');
+        break;
+      case 'profile':
+        navigate('ProfileDetails');
+        break;
+      case 'saved':
+        navigate('AddressScreen');
+        break;
+      case 'logout':
+        handleLogout();
+        break;
+      case 'login':
+        navigate('Login');
+        break;
+      default:
+        break;
+    }
   };
 
   const confirmLogout = () => {
@@ -63,7 +120,9 @@ const UserProfile = () => {
         <View style={styles.row}>
           <Image source={item.icon} style={styles.icons} />
           <View style={{marginLeft: ms(10)}}>
-            <Text style={styles.title}>{item?.title}</Text>
+            <Text style={styles.title}>
+              {item?.slug === 'logout' && !token ? 'Login' : item?.title}
+            </Text>
           </View>
         </View>
 
@@ -82,10 +141,12 @@ const UserProfile = () => {
         contentContainerStyle={styles.container}>
         <Text style={styles.headerText}>My Profile</Text>
         <View style={styles.profileCont}>
-          <Image
+          <FastImage
             source={
               localPhoto
                 ? {uri: localPhoto?.path}
+                : userdetails?.default_profile_image
+                ? {uri: userdetails?.default_profile_image}
                 : {
                     uri: 'https://images.unsplash.com/photo-1750390200217-628bdc2d7651?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
                   }
@@ -93,6 +154,7 @@ const UserProfile = () => {
             style={styles.profile}
           />
           <TouchableOpacity
+            disabled={!token ? true : false}
             onPress={() => {
               handleProfileImage();
             }}
@@ -107,7 +169,7 @@ const UserProfile = () => {
               fontSize: fontSizes.xl,
             },
           ]}>
-          Sania Disuza
+          {userdetails?.first_name ?? 'Guest User'}
         </Text>
 
         <FlatList
@@ -187,6 +249,8 @@ const createStyles = theme =>
       height: ms(120),
       borderRadius: 100,
       marginVertical: vs(15),
+      justifyContent: 'center',
+      alignItems: 'center',
       // overflow:'hidden'
     },
     profile: {

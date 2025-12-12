@@ -1474,6 +1474,8 @@ PODS:
     - Yoga
   - react-native-netinfo (11.4.1):
     - React-Core
+  - react-native-render-html (6.3.4):
+    - React-Core
   - react-native-safe-area-context (5.6.1):
     - DoubleConversion
     - glog
@@ -1919,6 +1921,8 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - RNDeviceInfo (15.0.1):
+    - React-Core
   - RNFastImage (8.13.0):
     - DoubleConversion
     - glog
@@ -2085,6 +2089,7 @@ DEPENDENCIES:
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
   - react-native-mmkv (from `../node_modules/react-native-mmkv`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
+  - react-native-render-html (from `../node_modules/react-native-render-html`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-oscompat (from `../node_modules/react-native/ReactCommon/oscompat`)
@@ -2119,6 +2124,7 @@ DEPENDENCIES:
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - ReactNativeAvoidSoftinput (from `../node_modules/react-native-avoid-softinput`)
   - RNBootSplash (from `../node_modules/react-native-bootsplash`)
+  - RNDeviceInfo (from `../node_modules/react-native-device-info`)
   - "RNFastImage (from `../node_modules/@d11/react-native-fast-image`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNScreens (from `../node_modules/react-native-screens`)
@@ -2226,6 +2232,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-mmkv"
   react-native-netinfo:
     :path: "../node_modules/@react-native-community/netinfo"
+  react-native-render-html:
+    :path: "../node_modules/react-native-render-html"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
   React-NativeModulesApple:
@@ -2294,6 +2302,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-avoid-softinput"
   RNBootSplash:
     :path: "../node_modules/react-native-bootsplash"
+  RNDeviceInfo:
+    :path: "../node_modules/react-native-device-info"
   RNFastImage:
     :path: "../node_modules/@d11/react-native-fast-image"
   RNGestureHandler:
@@ -2352,6 +2362,7 @@ SPEC CHECKSUMS:
   react-native-image-picker: c73e6edfdbc2bbc1c12b3fe9c2149441fa08f149
   react-native-mmkv: 63d1488cd5f735b06d3bbb1214c85cff619bf842
   react-native-netinfo: f0a9899081c185db1de5bb2fdc1c88c202a059ac
+  react-native-render-html: 984dfe2294163d04bf5fe25d7c9f122e60e05ebe
   react-native-safe-area-context: f2239c6eb3752c012c89f25aabb436a18d4265e6
   React-NativeModulesApple: a398af5d9799bb49f0b0fabab09c362a3899d8bc
   React-oscompat: 56b4766e96b06843a3af49a6763ef40992e720aa
@@ -2386,6 +2397,7 @@ SPEC CHECKSUMS:
   ReactCommon: d7a6354467ffb346f88312e828764b87d4c81c75
   ReactNativeAvoidSoftinput: 3f91fcbb0ccc1b52ac7d764fe2a3009bbdbd6f65
   RNBootSplash: 7bae807e5de769a1058a23f93291b6322269bc65
+  RNDeviceInfo: 53f9c84e28e854a308d3e548e25ef120b4615531
   RNFastImage: 53e33ea946fe83500df019090f022842dc652a13
   RNGestureHandler: f29c357da0402e27eb929df5e3ac9fa1b201658e
   RNScreens: ff9b889ead6100d019d236599741efc1c4586128

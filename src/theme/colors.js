@@ -14,6 +14,7 @@ export const colors = {
   input_text: '#A9A9A9',
   form_border: '#B0B0B0',
   blue:'#3847ff',
+  green:'#00F0A8'
 };
 
 export const ICONS = {
@@ -44,6 +45,7 @@ export const ICONS = {
   sortBy: require('../../assets/icons/sortBy.png'),
   profile_info: require('../../assets/icons/profile_info.png'),
   space: require('../../assets/icons/space.png'),
+  adedWishlist: require('../../assets/icons/add_to_favorites.png'),
 
   // bottom tabs
   home: require('../../assets/icons/House.png'),

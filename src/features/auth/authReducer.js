@@ -7,8 +7,12 @@ const initialState = {
   isLoading: true,
   isDataSubmitting: false,
   loginResponse: {},
+  singUpData:{},
   guestUser: '',
   isRegisterSuccess: false,
+  device_id:'',
+  isGuest:false,
+  isAuthAction: false
 };
 
 const AuthSlice = createSlice({
@@ -19,12 +23,12 @@ const AuthSlice = createSlice({
       state.auth_status = action.type;
       state.isLoading = true;
       state.isDataSubmitting = true;
-
     },
     signInSuccess(state, action) {
       state.auth_status = action.type;
       state.isLoading = false;
       state.token = action?.payload?.userToken ?? null;
+      state.isGuest = false,
       state.isDataSubmitting = false;
     },
     signInFailure(state, action) {
@@ -33,6 +37,20 @@ const AuthSlice = createSlice({
       state.error = action.payload;
     },
 
+     clearProfileAuthError(state) {
+          state.token = null;
+          state.isGuest = true;
+      },
+
+    updateDeviceToken(state,actoin){
+      state.device_id = actoin.payload
+    },
+    updateUser(state,actoin){
+      state.isGuest = actoin.payload
+    },
+    updateUserAuthTogle(state,actoin){
+      state.isAuthAction = actoin.payload
+    },
     signUpRequest(state, action) {
       state.auth_status = action.type;
       state.isLoading = true;
@@ -42,9 +60,9 @@ const AuthSlice = createSlice({
     signUpSuccess(state, action) {
       state.auth_status = action.type;
       state.isLoading = false;
+      state.singUpData = action.payload,
       state.isDataSubmitting = false;
       state.isRegisterSuccess = true;
-      // state.token = action?.payload?.userToken ?? null;
     },
     signUpFailure(state, action) {
       state.auth_status = action.type;
@@ -81,5 +99,11 @@ export const {
   signUpRequest,
   signUpSuccess,
   signUpFailure,
+
+  updateUser,
+  updateUserAuthTogle,
+
+  updateDeviceToken,
+  clearProfileAuthError
 } = AuthSlice.actions;
 export default AuthSlice.reducer;

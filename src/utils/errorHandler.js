@@ -1,28 +1,35 @@
-// errorHandler.js
-export const getErrorMessage = (error) => {
-  if (!error) return "Something went wrong. Please try again.";
+import { ToastService } from './toastService'; // ✅ correct path and case
 
-  // If API gives structured error { message: "..."}
-  if (typeof error === "object") {
-    if (error.message) return error.message;
-    if (error.error) return error.error;
-    if (error.response?.data?.message) return error.response.data.message;
-  }
+export const errorHandler = (code, message = '', context = '') => {
+  console.log(`🔴 API Error [${context || 'unknown'}]:`, { code, message });
+  const msg = message?.trim() || '';
 
-  // Handle common network issues
-  const errorText = String(error).toLowerCase();
-  if (errorText.includes("network")) {
-    return "Network error. Please check your internet connection.";
-  }
-  if (errorText.includes("timeout")) {
-    return "Request timed out. Try again later.";
-  }
-  if (errorText.includes("unauthorized")) {
-    return "You are not authorized. Please log in again.";
-  }
-  if (errorText.includes("500")) {
-    return "Server error. Please try again later.";
-  }
+  switch (Number(code)) {
+    case 0:
+      return ToastService.error('Network Error', 'Please check your connection.');
 
-  return "Unexpected error occurred. Please try again.";
+    case 400:
+      return ToastService.error('Bad Request', msg || 'Invalid request. Try again.');
+
+    case 401:
+      return ToastService.info('Session Expired', 'Please log in again.');
+
+    case 403:
+      return ToastService.error('Access Denied', "You don't have permission.");
+
+    case 404:
+      return ToastService.error('Not Found', msg || 'Resource unavailable.');
+
+    case 422:
+      return ToastService.error('Invalid Data', msg || 'Please check your inputs.');
+
+    case 500:
+      return ToastService.error('Server Error', msg || 'Please try again later.');
+
+    case 503:
+      return ToastService.error('Service Unavailable', 'Please try again shortly.');
+
+    default:
+      return ToastService.error('Unexpected Error', msg || 'Something went wrong.');
+  }
 };

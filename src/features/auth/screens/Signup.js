@@ -26,17 +26,22 @@ import PopupModal from '../../../components/PopupModal';
 import ReusableModal from '../../appScreens/components/ReusableModal';
 import {loerms_ipsum} from '../../../utils/globalJson';
 import {useDispatch, useSelector} from 'react-redux';
-import {signUpRequest} from '../authReducer';
+import {signInRequest, signInSuccess, signUpRequest} from '../authReducer';
+import {postApi} from '../../../api/requestApi';
+import {errorHandler, getErrorMessage} from '../../../utils/errorHandler';
+import {setToken} from '../../../utils/authStorage';
+import {ALL_APi_LIST} from '../../../utils/apis';
+import {getUserProfile} from '../../appScreens/appReducer';
 
 const emailSchema = Yup.object().shape({
-  fullName: Yup.string().required('Full name is required'),
+  // fullName: Yup.string().required('Full name is required'),
   email: Yup.string().email('Invalid email').required('Email is required'),
-  password: Yup.string()
-    .min(6, 'Password must be at least 6 characters')
-    .required('Password is required'),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref('password')], 'Passwords must match')
-    .required('Confirm password is required'),
+  // password: Yup.string()
+  //   .min(6, 'Password must be at least 6 characters')
+  //   .required('Password is required'),
+  // confirmPassword: Yup.string()
+  //   .oneOf([Yup.ref('password')], 'Passwords must match')
+  //   .required('Confirm password is required'),
   terms: Yup.boolean().oneOf([true], 'You must accept terms'),
 });
 
@@ -50,7 +55,7 @@ const phoneSchema = Yup.object().shape({
 const Signup = ({navigation}) => {
   const {showPopup} = usePopup();
 
-  const {isRegisterSuccess, isDataSubmitting} = useSelector(
+  const {isRegisterSuccess, isDataSubmitting, singUpData} = useSelector(
     state => state.Auth,
   );
 
@@ -60,6 +65,11 @@ const Signup = ({navigation}) => {
   const styles = createStyles(theme);
 
   const [isOtpModalVisible, setOtpModalVisible] = useState(false);
+  const [buttonLoader, setButtonLoader] = useState(false);
+  const [hashCode, setHashCode] = useState({
+    hashCode: '',
+    regReqData: '',
+  });
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState('Email');
   const [mobile, setMobile] = useState('');
@@ -85,10 +95,10 @@ const Signup = ({navigation}) => {
   } = useForm({
     resolver,
     defaultValues: {
-      fullName: '',
+      // fullName: '',
       email: '',
-      password: '',
-      confirmPassword: '',
+      // password: '',
+      // confirmPassword: '',
       mobile: '',
       terms: false,
     },
@@ -120,34 +130,36 @@ const Signup = ({navigation}) => {
   }
 
   const onSubmit = async data => {
-    console.log('Register Data:', data);
+    setButtonLoader(true);
     let payload = {
-      fullName: data?.fullName,
       email: data?.email,
-      password: data?.password,
-      confirmPassword: data?.confirmPassword,
-      mobile: '9876543210',
-      terms: data?.terms,
     };
-    dispatch(signUpRequest(payload));
-
-    // API Call
+    postApi('login', payload)
+      .then(res => {
+        setHashCode({
+          ...hashCode,
+          hashCode: res?.data?.hash,
+          regReqData: data?.email,
+        });
+        setButtonLoader(false);
+        setOtpModalVisible(true);
+      })
+      .catch(err => {
+        setButtonLoader(false);
+        getErrorMessage(
+          err?.response?.data?.response_code,
+          err?.response?.data?.message,
+        );
+      });
   };
 
-  useEffect(() => {
-    if (isRegisterSuccess) {
-      showPopup({
-        type: 'success',
-        title: 'Done!',
-        message: 'Successfully registerd , thank you for choosing us  🎉',
-        confirmText: 'Continue to Login',
-        onConfirm: () => navigation.navigate('Login'),
-      });
-      setTimeout(() => {
-        navigation.replace('Login');
-      }, 1500);
-    }
-  }, [isRegisterSuccess]);
+  const handleAuthToken = _token => {
+    setToken(_token);
+    setButtonLoader(false);
+    dispatch(signInSuccess({userToken: _token}));
+    dispatch(getUserProfile());
+    setOtpModalVisible(false);
+  };
 
   const handleMobileRegister = otp => {
     console.log(otp);
@@ -156,8 +168,8 @@ const Signup = ({navigation}) => {
         showPopup({
           type: 'success',
           title: 'Done!',
-          message: 'Successfully registerd , thank you for choosing us  🎉',
-          confirmText: 'Continue to Login',
+          message: 'Successfully Logged  In , thank you for choosing us  🎉',
+          confirmText: 'Continue to Explore',
           onConfirm: () => navigation.navigate('Login'),
         });
       }, 1500);
@@ -166,20 +178,65 @@ const Signup = ({navigation}) => {
     }
   };
 
+  const handleEmailValidate = otp => {
+    if (otp) {
+      setButtonLoader(true);
+      let payload = {
+        email: hashCode?.regReqData,
+        hash: hashCode?.hashCode,
+        otp: otp,
+      };
+      postApi(ALL_APi_LIST.verifyOtp, payload)
+        .then(respo => {
+          let _token = respo?.data?.token;
+          if (_token) {
+            setToken(_token);
+            setTimeout(() => {
+              postApi('refresh-token').then(res => {
+                if (res?.data?.refresh_token) {
+                  showPopup({
+                    type: 'success',
+                    title: 'Done!',
+                    message:
+                      'Successfully signup/signin , thank you for choosing us  🎉',
+                    confirmText: 'Continue to explore',
+                    onConfirm: () => handleAuthToken(res?.data?.refresh_token),
+                  });
+                  setTimeout(() => {
+                    handleAuthToken(res?.data?.refresh_token);
+                  }, 1500);
+                }
+              });
+            }, 1000);
+          }
+        })
+        .catch(error => {
+          const code = error?.response?.status;
+          const message = error?.response?.data?.message;
+          errorHandler(code, message, 'signUpFailure');
+          setButtonLoader(false);
+          setOtpModalVisible(false);
+        });
+    }
+  };
+
   return (
     <AvoidSoftInputView style={styles.parent} behavior="padding">
       <ScrollView contentContainerStyle={styles.container}>
-        {/* <View style={styles.logoWrapper}>
-          <Image
-            source={IMAGES.logo} // add your Handova logo in assets
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View> */}
-        <Text style={styles.title}>Create An Account</Text>
+        <View style={styles.logoWrapper}>
+                  <Image
+                    source={IMAGES.logo} // add your Handova logo in assets
+                    style={styles.logo}
+                    resizeMode='stretch'
+                  />
+                </View>
+        <Text style={styles.title}>Signup/SignIn To Your Account</Text>
         <Text style={[styles.subtitle]}>
-          Fill your details below and Join us to discover amazing fashion
+          You Have Been Missed , Sign/signup in to your account and continue exploring
+          the best fashion with us.
         </Text>
+
+         
 
         <SignUpTab
           type={tab => {
@@ -189,7 +246,8 @@ const Signup = ({navigation}) => {
         />
         {selectedTab === 'Email' && (
           <View style={{width: wp(90)}}>
-            <Controller
+            {/* no needed as we are following amazaon , myntra as ref  */}
+            {/* <Controller
               control={control}
               name="fullName"
               render={({field: {onChange, value, onBlur}}) => (
@@ -202,7 +260,7 @@ const Signup = ({navigation}) => {
                   error={errors.fullName?.message}
                 />
               )}
-            />
+            /> */}
             <Controller
               control={control}
               name="email"
@@ -218,7 +276,7 @@ const Signup = ({navigation}) => {
                 />
               )}
             />
-            <Controller
+            {/* <Controller
               control={control}
               name="password"
               render={({field: {onChange, value, onBlur}}) => (
@@ -247,7 +305,8 @@ const Signup = ({navigation}) => {
                   error={errors.confirmPassword?.message}
                 />
               )}
-            />
+            /> */}
+
             <Controller
               control={control}
               name="terms"
@@ -293,9 +352,9 @@ const Signup = ({navigation}) => {
               <Text style={{color: 'red'}}>{errors.terms.message}</Text>
             )}
             <CustomButton
-              title="Sign Up"
+              title="Sign Up/Sing In"
               onPress={handleSubmit(onSubmit)}
-              loading={isDataSubmitting}
+              loading={isDataSubmitting || buttonLoader}
             />
           </View>
         )}
@@ -383,10 +442,10 @@ const Signup = ({navigation}) => {
                 fontFamily: fontFamily.poppins_regular,
               },
             ]}>
-            Already have have an account?
+            Wanna continue as guest user ?
           </Text>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Login')}
+            onPress={() => navigation.navigate('MyTabs')}
             activeOpacity={0.7}>
             <Text
               style={[
@@ -397,7 +456,7 @@ const Signup = ({navigation}) => {
                   fontFamily: fontFamily.poppins_semiBold,
                 },
               ]}>
-              Login
+              Homescreen
             </Text>
           </TouchableOpacity>
         </View>
@@ -407,9 +466,13 @@ const Signup = ({navigation}) => {
         onBackdropPress={() => {
           setOtpModalVisible(false);
         }}
+        type={selectedTab}
         submit={otp => {
-          handleMobileRegister(otp);
+          selectedTab === 'Phone'
+            ? handleMobileRegister(otp)
+            : handleEmailValidate(otp);
         }}
+        loading={isDataSubmitting}
       />
 
       {/* // terms and Conditions popup // */}
@@ -439,7 +502,7 @@ const createStyles = theme =>
       flex: 1,
     },
     logo: {
-      width: s(90),
+      width: '100%',
       height: vs(90),
     },
 
@@ -502,7 +565,7 @@ const createStyles = theme =>
       gap: s(5),
     },
     logoWrapper: {
-      width: s(90),
+      width: ms(180),
       height: vs(90),
       alignItems: 'center',
       alignSelf: 'center',

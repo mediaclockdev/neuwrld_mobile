@@ -59,3 +59,6 @@ export const clearAll = () => {
     console.log('MMKV clearAll error:', e);
   }
 };
+
+
+

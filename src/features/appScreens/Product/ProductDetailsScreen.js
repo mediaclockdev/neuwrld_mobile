@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,11 @@ import {
   ScrollView,
   StyleSheet,
   FlatList,
+  useWindowDimensions,
+  LayoutAnimation,
 } from 'react-native';
-import {ms, rr, s, vs} from '../../../utils/responsive';
+import {hp, ms, rr, s, vs} from '../../../utils/responsive';
 import ImageView from 'react-native-image-viewing';
-import Header from '../../../components/Header';
 import SubHeader from '../components/SubHeader';
 import {ICONS} from '../../../theme/colors';
 import {goBack, navigate} from '../../../utils/rootNavigation';
@@ -19,25 +20,37 @@ import CustomButton from '../../../components/CustomButton';
 import {getItem, setItem} from '../../../utils/storage';
 import {useDispatch, useSelector} from 'react-redux';
 import {IMG_URL} from '../../../api/apiClient';
-import {getProductDetailsRequest} from '../appReducer';
+import {
+  addToWishlistRequest,
+  getCouponRequest,
+  getProductDetailsRequest,
+  handleCartRequest,
+} from '../appReducer';
 import RenderHtml from 'react-native-render-html';
+import AppImage from '../components/AppImage';
+import {fontFamily, fontSizes} from '../../../theme/typography';
+import {animateScreenEnter} from '../../../utils/animations';
+import {useFocusEffect} from '@react-navigation/native';
+import {usePopup} from '../../../context/PopupContext';
 
 const ProductDetailsScreen = ({route, navigation}) => {
+  const {width: contentWidth} = useWindowDimensions();
+
   const {theme} = useTheme();
   const styles = createStyles(theme);
-  const {isLoading, productDetails} = useSelector(state => state.App);
-
+  const {isLoading, addedToCart, cart_load, productDetails} = useSelector(
+    state => state.App,
+  );
+  const {isGuest} = useSelector(state => state.Auth);
+  const [isAuthAction, serIsAuthAction] = useState(false);
   const dispatch = useDispatch();
 
-  // const {productData} = route.params;
-  const [selectedSize, setSelectedSize] = useState('');
-  const [selectedColor, setSelectedColor] = useState('');
-  const [selectedFebric, setSelectedFebric] = useState('');
   const [Cart, setCart] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
   const [productImages, setProductsImages] = useState([]);
+  const [quantity, setQuantity] = useState(0);
 
   const [galleryVisible, setGalleryVisible] = useState(false);
-  const [addedToCart, setAddedToCart] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const openGallery = index => {
     setSelectedIndex(index);
@@ -54,40 +67,163 @@ const ProductDetailsScreen = ({route, navigation}) => {
     return {html: content};
   };
 
-  // Load cart on mount
+  const handleWishlist = item => {
+    if (isGuest) {
+      serIsAuthAction(true);
+    } else {
+      let screen = 'ProductDetailsScreen';
+      let sku = productDetails?.product?.product_sku;
+      let payload = {
+        product_variant_id: item?.id,
+        is_saved_for_later: 1,
+        quantity: 1,
+      };
+      dispatch(addToWishlistRequest({payload, screen, sku}));
+    }
+  };
+
+  const {showPopup} = usePopup();
   useEffect(() => {
-    const prev = getItem('cart');
-    if (prev) {
-      setCart(prev);
+    if (isGuest && isAuthAction) {
+      showPopup({
+        type: 'warning',
+        title: 'Hey There!',
+        message:
+          'Please sing up to use this ammezing feature ,and experience the world of fashion   🎉',
+        confirmText: 'Sign up to explore',
+        cancelText: 'Cancle',
+        showCancel: true,
+        onConfirm: () => (navigate('Signup'), serIsAuthAction(false)),
+        onCancel: () => serIsAuthAction(false),
+      });
     }
-    if (productDetails?.images?.length > 0) {
-      const img = productDetails?.images?.map(item => ({
-        uri: IMG_URL + item,
-      }));
-      setProductsImages(img);
-    }
-  }, []);
+  }, [isAuthAction]);
+
+  const increaseQty = () => setQuantity(prev => prev + 1);
+
+  const decreaseQty = () => {
+    if (quantity > 1) setQuantity(prev => prev - 1);
+    else setQuantity(0); // back to Add To Cart mode
+  };
+
+  // Load cart on mount
+
+  //   useFocusEffect(
+  //     useCallback(() => {
+  // dispatch(getCouponRequest())
+
+  //       // const prev = getItem('cart');
+  //       // const prevItems = getItem('wishlist');
+  //       // prevItems ? setWishlist(prevItems) : setWishlist([]);
+  //       // if (prev) {
+  //       //   setCart(prev);
+  //       // }
+  //       // if (productDetails?.images?.length > 0) {
+  //       //   const img = productDetails?.images?.map(item => ({
+  //       //     uri: item?.image,
+  //       //   }));
+  //       //   setProductsImages(img);
+  //       // }
+
+  //       // animateScreenEnter();
+
+  //       return () => {
+  //         // Exit animation (triggers on unmount/focus loss)
+  //         LayoutAnimation.configureNext({
+  //           duration: 300,
+  //           delete: {
+  //             type: LayoutAnimation.Types.easeOut,
+  //             property: LayoutAnimation.Properties.opacity,
+  //           },
+  //         });
+  //       };
+
+  //     }, []),
+  //   );
 
   const _addToCart = item => {
+    if (isGuest) {
+      serIsAuthAction(true);
+    } else {
+      let payload = {
+        product_variant_id: item?.id,
+        is_saved_for_later: 0,
+        quantity: quantity,
+      };
+      dispatch(handleCartRequest(payload));
+    }
+  };
+
+  const _addToWishList = item => {
+    let isPresent = wishlist?.find(data => data?.id == item.id);
+    if (isPresent) {
+    }
     const updatedCart = [...Cart, item];
     setCart(updatedCart);
     setItem('cart', updatedCart);
     setAddedToCart(true);
   };
+
   const fetchProductDetails = (item, variables) => {
-    console.log('item',item)
-    dispatch(getProductDetailsRequest(variables?.sku));
-    if (item?.id == 3) {
-      setSelectedSize(variables);
-      return;
-    } else if (item?.id == 2) {
-      setSelectedFebric(variables);
-      return;
-    } else if (item?.id == 1) {
-      setSelectedColor(variables);
-      return;
-    }
+    dispatch(getProductDetailsRequest(variables?.sku ?? item?.product_sku));
     scrollToTop();
+  };
+
+  const _renderproduct = ({item, index}) => {
+    return (
+      <TouchableOpacity
+        key={index}
+        style={styles.card}
+        activeOpacity={0.85}
+        onPress={() => {
+          fetchProductDetails(item, '');
+        }}>
+        {/* PRODUCT IMAGE */}
+        <View style={styles.imageBox}>
+          <TouchableOpacity
+            onPress={() => {
+              handleWishlist(item?.product);
+            }}
+            style={styles.heart}>
+            <Text
+              style={{
+                color: item?.is_in_wishlist ? theme?.primary_color : '#aaa',
+              }}>
+              🤍
+            </Text>
+          </TouchableOpacity>
+          <AppImage
+            uri={item?.image}
+            autoHeight={false}
+            resizeMode="cover"
+            style={styles.productImage}
+            borderRadius={16}
+          />
+        </View>
+
+        {/* TITLE */}
+        <Text numberOfLines={1} style={styles.name}>
+          {item?.name}
+        </Text>
+
+        {/* PRICE ROW */}
+        <View style={styles.priceRow}>
+          <View>
+            <Text style={[styles.old_price]}>{item?.old_price}</Text>
+            <Text style={styles.price}>{item?.price}</Text>
+          </View>
+          <Text style={styles.discountTag}>-{item?.discount}</Text>
+        </View>
+
+        {/* WISHLIST + RATING */}
+        <View style={styles.bottomRow}>
+          <View style={styles.ratingBox}>
+            <Text style={styles.rate}>⭐ </Text>
+            <Text style={styles.ratingText}>{item?.avg_rating}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   return (
@@ -95,13 +231,20 @@ const ProductDetailsScreen = ({route, navigation}) => {
       <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
         <SubHeader
           onPressLeftIcon={() => {
+            LayoutAnimation.configureNext(
+              LayoutAnimation.Presets.easeInEaseOut,
+            );
             goBack();
           }}
           centerlabel={'Product Details'}
           onPressRightIcon={() => {
-            console.log('roght');
+            handleWishlist(productDetails?.product);
           }}
-          rightIcon={ICONS.wishlistList}
+          rightIcon={
+            productDetails?.product?.is_in_wishlist
+              ? ICONS?.adedWishlist
+              : ICONS.wishlistList
+          }
         />
         {/* Product Main Image */}
         <View style={styles.mainImageCont}>
@@ -130,10 +273,7 @@ const ProductDetailsScreen = ({route, navigation}) => {
                 }
               }}>
               <View style={styles.thumbnailWrapper}>
-                <Image
-                  source={{uri: IMG_URL + item}}
-                  style={styles.thumbnail}
-                />
+                <Image source={{uri: item?.image}} style={styles.thumbnail} />
 
                 {index === productDetails?.images?.length - 1 &&
                   productDetails?.images?.length > 6 && (
@@ -153,7 +293,7 @@ const ProductDetailsScreen = ({route, navigation}) => {
           <Text style={styles.category}>
             {productDetails?.product?.category}
           </Text>
-          <Text style={styles.title}>{productDetails?.product?.name}</Text>
+          <Text style={styles.headerText}>{productDetails?.product?.name}</Text>
 
           <View style={styles.ratingRow}>
             <Text style={styles.star}>⭐</Text>
@@ -164,17 +304,17 @@ const ProductDetailsScreen = ({route, navigation}) => {
 
           <Text style={styles.sectionTitle}>Product Details</Text>
           <RenderHtml
-            contentWidth={'100%'}
+            contentWidth={contentWidth}
             source={HTMLRenderContent(productDetails?.product?.product_details)}
           />
           <Text style={styles.sectionTitle}>Product Specifications</Text>
 
           <RenderHtml
-            contentWidth={'100%'}
+            contentWidth={contentWidth}
             source={HTMLRenderContent(productDetails?.product?.specifications)}
           />
 
-          {productDetails?.attribute_options.map(item => (
+          {productDetails?.attribute_options?.map(item => (
             <View>
               <Text style={styles.sectionTitle}>Select {item?.name}</Text>
               <View style={styles.sizeRow}>
@@ -183,19 +323,13 @@ const ProductDetailsScreen = ({route, navigation}) => {
                     key={data?.sku}
                     style={[
                       styles.sizeButton,
-                      selectedSize?.sku == data?.sku
-                        ? styles.activeSize
-                        : selectedColor?.sku == data?.sku
-                        ? styles.activeSize
-                        : selectedFebric?.sku == data?.sku
-                        ? styles.activeSize
-                        : styles.sizeButton,
+                      data?.is_current && styles.activeSize,
                     ]}
                     onPress={() => fetchProductDetails(item, data)}>
                     <Text
                       style={[
                         styles.sizeText,
-                        // selectedSize === size && styles.activeSizeText,
+                        data?.is_current && styles.activeSizeText,
                       ]}>
                       {data?.value}
                     </Text>
@@ -204,44 +338,68 @@ const ProductDetailsScreen = ({route, navigation}) => {
               </View>
             </View>
           ))}
-          {/* Sizes */}
 
-          <View style={styles.sizeRow}>
-            {productDetails?.colors?.map(size => (
-              <TouchableOpacity
-                key={size}
+          {/* recommended_products  */}
+          <FlatList
+            ListHeaderComponent={
+              <View
                 style={[
-                  styles.sizeButton,
-                  selectedSize === size && styles.activeSize,
-                ]}
-                onPress={() => setSelectedSize(size)}>
-                <Text
-                  style={[
-                    styles.sizeText,
-                    selectedSize === size && styles.activeSizeText,
-                  ]}>
-                  {size}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  styles.headerRow,
+                  {
+                    marginVertical: ms(10),
+                  },
+                ]}>
+                <Text style={styles.headerText}>Checkout Similar Propduct</Text>
+              </View>
+            }
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled={true}
+            style={{marginTop: vs(6)}}
+            data={productDetails?.checkout_more_products}
+            keyExtractor={({item, index}) => String(index)}
+            renderItem={_renderproduct}
+            numColumns={2}
+            scrollEnabled={false}
+            ListFooterComponent={<View style={styles.devider} />}
+          />
         </View>
       </ScrollView>
 
       {/* Bottom Bar */}
+
       <View style={styles.bottomBar}>
-        <Text style={styles.price}>${productDetails?.discount_price}</Text>
-        <CustomButton
-          leftIcon={ICONS.add_to_cart}
-          leftIconStyle={styles.cart}
-          btnStyle={styles.addButton}
-          title={addedToCart ? 'View Cart' : 'Add To Cart'}
-          onPress={() => {
-            addedToCart
-              ? navigation.navigate('MyTabs', {screen: 'Cart'})
-              : _addToCart(productDetails);
-          }}
-        />
+        <View>
+          <Text style={styles.old_price}>
+            {productDetails?.product?.old_price}
+          </Text>
+          <Text style={styles.price}>{productDetails?.product?.price}</Text>
+        </View>
+        <View>
+          <View style={styles.qtyContainer}>
+            <TouchableOpacity style={styles.qtyBtn} onPress={decreaseQty}>
+              <Text style={styles.qtyText}>-</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.qtyNumber}>{quantity}</Text>
+
+            <TouchableOpacity style={styles.qtyBtn} onPress={increaseQty}>
+              <Text style={styles.qtyText}>+</Text>
+            </TouchableOpacity>
+          </View>
+          <CustomButton
+            leftIcon={ICONS.add_to_cart}
+            disabled={quantity == 0 ? true : false}
+            leftIconStyle={styles.cart}
+            btnStyle={styles.addButton}
+            loading={cart_load}
+            title={addedToCart ? 'View Cart' : 'Add To Cart'}
+            onPress={() => {
+              addedToCart
+                ? navigation?.navigate('MyTabs', {screen: 'Cart'})
+                : _addToCart(productDetails?.product);
+            }}
+          />
+        </View>
       </View>
 
       <ImageView
@@ -315,7 +473,6 @@ const createStyles = theme =>
       borderColor: '#eee',
       backgroundColor: '#fff',
     },
-    price: {fontSize: 18, fontWeight: 'bold'},
     addButton: {
       backgroundColor: theme.primary_color,
       paddingVertical: vs(10),
@@ -325,4 +482,158 @@ const createStyles = theme =>
       alignItems: 'center',
     },
     addButtonText: {color: '#fff', fontSize: 16, fontWeight: 'bold'},
+
+    // recommendedProduct
+
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    devider: {
+      height: hp(5),
+    },
+
+    card: {
+      width: '46%',
+      backgroundColor: '#fff',
+      borderRadius: 18,
+      overflow: 'hidden',
+      margin: '2%',
+
+      shadowColor: '#000',
+      shadowOpacity: 0.06,
+      shadowRadius: 5,
+      shadowOffset: {width: 0, height: 4},
+      elevation: 4,
+    },
+
+    imageBox: {
+      width: '100%',
+      aspectRatio: 3 / 3.5,
+      borderRadius: 16,
+      backgroundColor: '#f3f3f3',
+      overflow: 'hidden',
+    },
+    image: {
+      width: '100%',
+      height: '100%',
+    },
+
+    name: {
+      fontFamily: fontFamily.playfair_medium,
+      fontSize: fontSizes.md,
+      marginTop: 8,
+      marginHorizontal: 10,
+      color: '#222',
+    },
+
+    priceRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 6,
+      marginHorizontal: 10,
+      alignItems: 'center',
+    },
+
+    price: {
+      fontFamily: fontFamily.playfair_semiBold,
+      fontSize: fontSizes.lg,
+      color: theme.primary_color,
+    },
+
+    discountTag: {
+      backgroundColor: '#FFE8EC',
+      paddingVertical: 3,
+      paddingHorizontal: 8,
+      borderRadius: 8,
+      color: '#ff375f',
+      fontWeight: '600',
+    },
+    bottomRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: 12,
+      paddingBottom: 12,
+      marginTop: 10,
+    },
+
+    ratingBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+
+    ratingText: {
+      marginLeft: 4,
+      color: '#444',
+      fontSize: fontSizes.sm,
+    },
+
+    heart: {
+      position: 'absolute',
+      top: ms(6),
+      right: ms(6),
+      backgroundColor: theme?.background,
+      borderRadius: rr(30),
+      width: ms(30),
+      height: ms(30),
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 2,
+      zIndex: +100,
+    },
+    productImage: {
+      width: '100%',
+      aspectRatio: 3 / 4, // portrait orientation // safe, scalable, responsive
+      borderRadius: rr(10),
+    },
+
+    headerText: {
+      fontSize: fontSizes.lg,
+      color: theme.text,
+      fontFamily: fontFamily.playfair_semiBold,
+    },
+    subheaderText: {
+      fontSize: fontSizes.sm,
+      color: theme.gray,
+      fontFamily: fontFamily.playfair_medium,
+      textAlign: 'center',
+    },
+    old_price: {
+      fontSize: fontSizes.xs,
+      color: theme.gray,
+      fontFamily: fontFamily.playfair_medium, // Use regular or test semi-bold later
+      textAlign: 'left',
+      textDecorationLine: 'line-through',
+      textDecorationStyle: 'solid', // extra fix for iOS
+    },
+    qtyContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#F4E3C4',
+      borderRadius: 30,
+      paddingHorizontal: 5,
+      paddingVertical: 5,
+      justifyContent: 'space-between',
+    },
+    qtyBtn: {
+      width: 35,
+      height: 35,
+      borderRadius: 30,
+      backgroundColor: '#D4B183',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    qtyText: {
+      color: '#fff',
+      fontSize: 20,
+      fontWeight: '600',
+    },
+
+    qtyNumber: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: '#805A36',
+      marginHorizontal: 12,
+    },
   });

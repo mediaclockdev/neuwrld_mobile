@@ -17,6 +17,9 @@ import {useTheme} from '../../../../context/ThemeContext';
 import {createStyles} from './styles';
 import {setUser} from '../../../../utils/authStorage';
 import {navigate} from '../../../../utils/rootNavigation';
+import {useDispatch} from 'react-redux';
+import {updateUser} from '../../authReducer';
+import {getCustomerDashRequest} from '../../../appScreens/appReducer';
 
 const slides = [
   {
@@ -55,7 +58,7 @@ const OnboardingScreen = ({navigation}) => {
 
   const {theme} = useTheme(); // 👈 hook works here
   const styles = createStyles(theme);
-
+  const dispatch = useDispatch();
   // Auto slider
   useEffect(() => {
     const interval = setInterval(() => {
@@ -65,6 +68,12 @@ const OnboardingScreen = ({navigation}) => {
     }, 4000); // auto slide every 4s
     return () => clearInterval(interval);
   }, [currentIndex]);
+
+  const _handleUser = () => {
+    dispatch(getCustomerDashRequest());
+    setUser({userType: 'guest'});
+    dispatch(updateUser(true));
+  };
 
   const renderItem = ({item}) => (
     <View style={styles.slide}>
@@ -126,7 +135,7 @@ const OnboardingScreen = ({navigation}) => {
             style={styles.nextBtn}
             onPress={() => {
               if (currentIndex === slides.length - 1) {
-                setUser({userType: 'guest'});
+                _handleUser();
               } else {
                 flatListRef.current?.scrollToIndex({
                   index: currentIndex + 1,
@@ -153,7 +162,10 @@ const OnboardingScreen = ({navigation}) => {
       {/* Skip */}
       <TouchableOpacity
         style={styles.skipBtn}
-        onPress={() => navigate('Signup')}>
+        onPress={() =>
+          _handleUser()
+         
+        }>
         <Text style={styles.skipText}>Skip</Text>
       </TouchableOpacity>
 
