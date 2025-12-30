@@ -17,6 +17,7 @@ import {ms, vs, s, rr} from '../../../utils/responsive';
 import {fontFamily, fontSizes} from '../../../theme/typography';
 import {usePopup} from '../../../context/PopupContext';
 import {useNavigation} from '@react-navigation/native';
+import {useSelector} from 'react-redux';
 
 const addresses = [
   {
@@ -37,6 +38,9 @@ const addresses = [
 ];
 
 export default function Payment() {
+  const {customerDash, isLoading, savedAddress, appliedCoupon, cartData} =
+    useSelector(state => state.App);
+
   const {theme} = useTheme();
   const nav = useNavigation();
   const {showPopup} = usePopup();

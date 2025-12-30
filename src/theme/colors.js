@@ -13,8 +13,8 @@ export const colors = {
   text: '#1C1C1E', // dark warm text
   input_text: '#A9A9A9',
   form_border: '#B0B0B0',
-  blue:'#3847ff',
-  green:'#00F0A8'
+  blue: '#3847ff',
+  green: '#00F0A8',
 };
 
 export const ICONS = {
@@ -55,11 +55,14 @@ export const ICONS = {
   wishlistList: require('../../assets/icons/wishlistList.png'),
   category: require('../../assets/icons/category.png'),
   location: require('../../assets/icons/location.png'),
+  emptyStar: require('../../assets/icons/emptyStar.png'),
+  star: require('../../assets/icons/star.png'),
 };
 
 export const IMAGES = {
   logo: require('../../assets/images/logo.jpg'),
   Nuworld_logo: require('../../assets/images/Nuworld_logo.png'),
+  noData: require('../../assets/images/noData.png'),
 };
 export const GIF = {
   splash: require('../../assets/gif/neuwrld_splash.gif'),

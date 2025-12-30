@@ -17,8 +17,12 @@ const OtpInputPopUp = ({
   onBackdropPress,
   submit,
   type,
+  error,
+  isResend,
+  onPressResend,
   loading,
 }) => {
+  
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [modal, setModal] = useState(true);
   const [otpError, setOtpError] = useState('');
@@ -112,6 +116,11 @@ const OtpInputPopUp = ({
               loading={loading}
               onPress={handleVerifyOtp}
             />
+            <Text style={styles.errorText}>{error}</Text>
+            <Text onPress={onPressResend} style={[styles.modalTitle,{
+                  marginBottom: vs(),
+
+            }]}>Edit {isResend}</Text>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -135,6 +144,13 @@ const styles = StyleSheet.create({
     fontWeight: fontFamily.poppins_italic,
     marginBottom: vs(14),
     textAlign: 'center',
+  },
+  errorText: {
+    fontSize: fontSizes.sm,
+    fontWeight: fontFamily.poppins_italic,
+    marginBottom: vs(14),
+    textAlign: 'left',
+    color:'#F05454'
   },
   otpContainer: {
     flexDirection: 'row',

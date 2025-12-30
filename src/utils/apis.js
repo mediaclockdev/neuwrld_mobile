@@ -11,6 +11,8 @@ export const ALL_APi_LIST = {
   refreshToken:'refresh-token',
   couponGet:'coupon-list',
   getWishlist:'my-wishlist',
+  address:'user-address',
+  removeAdd:'remove-address',
 
   // non auth
   allCategories: 'categories',
@@ -20,4 +22,5 @@ export const ALL_APi_LIST = {
   dashboard: 'home-landing',
   user: 'getProfile',
   customer_Dash: 'home-landing',
+  advance_search:'products-autocomplete'
 };

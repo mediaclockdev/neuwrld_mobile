@@ -4,7 +4,10 @@ import LottieView from 'lottie-react-native';
 import {fontFamily, fontSizes} from '../theme/typography';
 import {vs} from '../utils/responsive';
 
-const NoProducts = () => {
+const NoProducts = ({
+  headerText = 'No Products Found',
+  subHeaderText='Try adjusting the filters or check another category.'
+}) => {
   return (
     <View style={styles.container}>
       <LottieView
@@ -14,9 +17,8 @@ const NoProducts = () => {
         style={styles.lottie}
       />
 
-      <Text style={styles.title}>No Products Found</Text>
-      <Text style={styles.subtitle}>
-        Try adjusting the filters or check another category.
+      <Text style={styles.title}>{headerText}</Text>
+      <Text style={styles.subtitle}>{subHeaderText}
       </Text>
     </View>
   );

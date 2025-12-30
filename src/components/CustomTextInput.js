@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   Image,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import {ICONS} from '../theme/colors';
 import {fontFamily, fontSizes} from '../theme/typography';
-import {hp, s} from '../utils/responsive';
+import {hp, s, vs} from '../utils/responsive';
 
 const CustomTextInput = ({
   value,
@@ -20,10 +21,12 @@ const CustomTextInput = ({
   icon,
   maxLength,
   secureTextEntry,
+  rightLoader,
   customStyle,
   placeholderTextColor,
   customIconStyleLeft,
   propsStyle,
+  textAlignVertical,
   error,
   onBlur,
   keyboardType = 'default',
@@ -87,6 +90,10 @@ const CustomTextInput = ({
           secureTextEntry={secureTextEntry && showPassword}
           keyboardType={keyboardType}
           placeholder=""
+          textAlignVertical={textAlignVertical}
+          autoCorrect={false}
+          placeholderTextColor={placeholderTextColor || '#999'}
+          
         />
         {secureTextEntry && (
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
@@ -97,6 +104,7 @@ const CustomTextInput = ({
             />
           </TouchableOpacity>
         )}
+        {rightLoader && <ActivityIndicator size={'small'} color={'#C49A6C'} />}
       </View>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
@@ -121,7 +129,7 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     fontFamily: fontFamily.poppins_regular,
     color: '#000',
-    paddingTop: 0,
+    paddingTop: vs(8),
   },
   inputError: {
     borderColor: '#EC382A',

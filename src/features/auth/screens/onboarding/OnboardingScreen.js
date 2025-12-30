@@ -26,7 +26,7 @@ const slides = [
     id: '1',
     title: 'Seamless Shopping Experience',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt',
+      'Shop faster, easier, and smarter with smooth navigation and quick checkout.',
     highlight: 'Seamless ',
     // image: require("../../assets/images/mock_phone.png"), // phone mock
     animation: require('../../../../../assets/gif/shopping.json'), // free Lottie animation

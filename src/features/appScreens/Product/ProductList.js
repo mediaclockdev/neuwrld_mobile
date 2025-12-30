@@ -14,17 +14,13 @@ import {useTheme} from '../../../context/ThemeContext';
 import {hp, ms, rr, s, vs} from '../../../utils/responsive';
 import {fontFamily, fontSizes} from '../../../theme/typography';
 import {useDispatch, useSelector} from 'react-redux';
-import {useFocusEffect} from '@react-navigation/native';
 import {
   getAllCategoriesRequest,
   getProductDetailsRequest,
   getProductRequest,
   getSubcategoryByCategoriesIdRequest,
 } from '../appReducer';
-import {IMG_URL} from '../../../api/apiClient';
-import ReusableModal from '../components/ReusableModal';
 import {goBack, navigate} from '../../../utils/rootNavigation';
-import Header from '../../../components/Header';
 import {ICONS} from '../../../theme/colors';
 import FilterByModule from '../components/FilterByModule';
 import CategorisPlaceholder from '../Skeleton/CategorisPlaceholder';
@@ -33,6 +29,8 @@ import NoProducts from '../../../components/NoProducts';
 import {usePopup} from '../../../context/PopupContext';
 import {postApi} from '../../../api/requestApi';
 import {ALL_APi_LIST} from '../../../utils/apis';
+import BottomSheet from '../../../components/BottomSheet';
+import SortSheet from './SortSheet';
 
 const ProductList = () => {
   const {theme} = useTheme();
@@ -40,10 +38,10 @@ const ProductList = () => {
   const {isLoading, products} = useSelector(state => state.App);
   const {isGuest} = useSelector(state => state.Auth);
   const [isAuthAction, serIsAuthAction] = useState(false);
-
   const [showFilterModle, setShowFilterModle] = useState(false);
   const dispatch = useDispatch();
-
+  const [sortByVisible, setSortByVisible] = useState(false);
+  const [selectedSort, setSelectedSort] = useState('TRENDING');
   const _handleProductClick = item => {
     dispatch(getProductDetailsRequest(item?.product_sku));
   };
@@ -54,16 +52,15 @@ const ProductList = () => {
       return;
     } else {
       let payload = {
-        product_variant_id: item?.product_id,
+        product_variant_id: item?.id,
         is_saved_for_later: 1,
         quantity: 1,
       };
       postApi(ALL_APi_LIST.wishlist, payload).then(res => {
+        console.log(res, payload, item);
         if (res?.success == true) {
           dispatch(getProductRequest(products?.category?.slug));
-        }
-        else {
-          
+        } else {
         }
       });
     }
@@ -119,7 +116,7 @@ const ProductList = () => {
 
         {/* TITLE */}
         <Text numberOfLines={1} style={styles.name}>
-          {item?.name}
+          {item?.product_name}
         </Text>
 
         {/* PRICE ROW */}
@@ -133,10 +130,12 @@ const ProductList = () => {
 
         {/* WISHLIST + RATING */}
         <View style={styles.bottomRow}>
-          <View style={styles.ratingBox}>
-            <Text style={styles.rate}>⭐ </Text>
-            <Text style={styles.ratingText}>{item?.avg_rating}</Text>
-          </View>
+          {item?.avg_rating && (
+            <View style={styles.ratingBox}>
+              <Text style={styles.rate}>⭐ </Text>
+              <Text style={styles.ratingText}>{item?.avg_rating}</Text>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -167,7 +166,11 @@ const ProductList = () => {
             style={styles.backButton}>
             <Image source={ICONS.filter} style={styles.backIcon} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => {
+              setSortByVisible(true);
+            }}
+            style={styles.backButton}>
             <Image source={ICONS.sortBy} style={styles.backIcon} />
           </TouchableOpacity>
         </View>
@@ -191,6 +194,23 @@ const ProductList = () => {
           setShowFilterModle(false);
         }}
         visible={showFilterModle}
+      />
+
+      <BottomSheet
+        visible={sortByVisible}
+        onBackdropPress={() => setSortByVisible(false)}
+        renderChild={
+          <SortSheet
+            selected={selectedSort}
+            isSorting={false}
+            onClose={() => setSortByVisible(false)}
+            onSelect={item => {
+              setSelectedSort(item.key); // instant UI update
+              setSortByVisible(false); // close sheet
+              // dispatch(sortProductsRequest(item.key)); // saga call
+            }}
+          />
+        }
       />
     </View>
   );
@@ -252,7 +272,7 @@ const createStyles = theme =>
 
     imageBox: {
       width: '100%',
-      aspectRatio: 3 / 3.5,
+      aspectRatio: 3 / 3.8,
       borderRadius: 16,
       backgroundColor: '#f3f3f3',
       overflow: 'hidden',
@@ -310,6 +330,14 @@ const createStyles = theme =>
       marginLeft: 4,
       color: '#444',
       fontSize: fontSizes.sm,
+    },
+
+    old_price: {
+      fontSize: fontSizes.xs,
+      color: theme.gray,
+      fontFamily: fontFamily.poppins_medium,
+      textAlign: 'left',
+      textDecorationLine: 'line-through',
     },
 
     heart: {

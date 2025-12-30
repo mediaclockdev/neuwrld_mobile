@@ -3,6 +3,8 @@ import {
   addToWishlistFailure,
   addToWishlistSuccess,
   clearProfileError,
+  getAddressFailure,
+  getAddressSuccess,
   getAllCategoriesFailure,
   getAllCategoriesSuccess,
   getCartFailure,
@@ -21,12 +23,14 @@ import {
   getWishlistFailure,
   getWishlistSuccess,
   handleCartFailure,
+  handleCartRemoveSuccess,
   handleCartSuccess,
 } from './appReducer';
 import {ALL_APi_LIST} from '../../utils/apis';
 import {errorHandler} from '../../utils/errorHandler';
 import {getApi, postApi} from '../../api/requestApi';
 import {clearProfileAuthError} from '../auth/authReducer';
+import {navigate} from '../../utils/rootNavigation';
 
 const DASHBOARD_TTL = 30 * 1000;
 const selectProfile = state => state.App;
@@ -132,6 +136,7 @@ function* getProducts(action) {
     );
     const data = response?.data?.data ?? response?.data ?? {};
     yield put(getProductSuccess(data));
+    navigate('ProductList');
   } catch (error) {
     errorHandler(error?.status || 500, error?.message);
     yield put(getProductFailure(error));
@@ -157,18 +162,17 @@ function* wishlistSaga(action) {
   let screen = action?.payload?.screen;
   let payload = action?.payload?.payload;
   let sku = action?.payload?.sku;
-  console.log('payload payload', payload, screen ,sku);
-
   try {
     const response = yield call(postApi, ALL_APi_LIST.wishlist, payload);
     const data = response?.data?.data ?? response?.data ?? {};
+    yield put(addToWishlistSuccess(data));
+
     if (screen == 'dashboard') {
       yield call(getCustomerDash);
     }
     if (screen == 'ProductDetailsScreen') {
       yield call(getProductDetails, sku); // ✅ FIXED
     }
-    yield put(addToWishlistSuccess(data));
   } catch (error) {
     console.log('errorerror', error);
     const code = error?.response?.status;
@@ -228,6 +232,7 @@ function* cartHandleSaga(action) {
   }
 }
 function* removeCartHandleSaga(action) {
+  console.log('action0001', action.payload);
   try {
     const response = yield call(
       postApi,
@@ -235,7 +240,8 @@ function* removeCartHandleSaga(action) {
       action.payload,
     );
     const data = response?.data?.data ?? response?.data ?? {};
-    yield put(getCartSuccess(data));
+    yield call(cartGetHandleSaga);
+    yield put(handleCartRemoveSuccess(data));
   } catch (error) {
     const code = error?.response?.status;
     const message = error?.response?.data?.message;
@@ -261,7 +267,7 @@ function* removeCartHandleSaga(action) {
   }
 }
 function* cartGetHandleSaga(action) {
-  console.log("getCartRequest",action, action.payload)
+  console.log('getCartRequest', action, action.payload);
   let coupon_code = action.payload;
   try {
     const response = yield call(
@@ -360,6 +366,35 @@ function* cartCouponSaga(action) {
   }
 }
 
+function* getAddressSaga(action) {
+  try {
+    const response = yield call(getApi, ALL_APi_LIST.address);
+    const data = response?.data?.data ?? response?.data ?? {};
+    yield put(getAddressSuccess(data));
+  } catch (error) {
+    const code = error?.response?.status;
+    const message = error?.response?.data?.message;
+    if (error?.status === 401) {
+      try {
+        yield call(getCustomerRefreshToken); // ← Fixed: no ()
+      } catch (refreshError) {
+        // Refresh failed → probably logout
+        errorHandler(refreshError?.status || 500, refreshError?.message);
+        yield put(getAddressFailure(refreshError));
+        // Optionally: yield put(logout());
+        return;
+      }
+    }
+    errorHandler(code, message, 'getAddressFailure');
+    yield put(
+      getAddressFailure({
+        status: code,
+        message: message || 'Something went wrong',
+      }),
+    );
+  }
+}
+
 // ✅ Watcher Saga
 function* appSaga() {
   yield all([takeLatest('app/getCustomerDashRequest', getCustomerDash)]);
@@ -379,6 +414,7 @@ function* appSaga() {
   yield all([takeLatest('app/getCouponRequest', cartCouponSaga)]);
   yield all([takeLatest('app/handleCartRemoveRequest', removeCartHandleSaga)]);
   yield all([takeLatest('app/getWishlistRequest', getWishlistSaga)]);
+  yield all([takeLatest('app/getAddressRequest', getAddressSaga)]);
 }
 
 // ✅ Correct export

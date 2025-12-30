@@ -7,43 +7,82 @@ import {
   View,
   FlatList,
 } from 'react-native';
-import React from 'react';
+import React, {useState} from 'react';
 import {useTheme} from '../../../context/ThemeContext';
 import {fontFamily, fontSizes} from '../../../theme/typography';
-import {hp, ms, vs} from '../../../utils/responsive';
+import {hp, ms, rr, s, vs} from '../../../utils/responsive';
 import SubHeader from '../components/SubHeader';
 import {setting} from '../../../utils/globalJson';
 import {ICONS} from '../../../theme/colors';
 import {goBack, navigate} from '../../../utils/rootNavigation';
 import CustomButton from '../../../components/CustomButton';
+import {useDispatch, useSelector} from 'react-redux';
+import {ToastService} from '../../../utils/toastService';
+import {TextInput} from 'react-native-gesture-handler';
+import {getCouponRequest} from '../appReducer';
 
 const Checkout = ({route}) => {
-  const {cartData} = route?.params;
+  const {customerDash, isLoading, savedAddress, appliedCoupon, cartData} =
+    useSelector(state => state.App);
+  const [promocode, setPromocode] = useState(appliedCoupon?.code ?? '');
+  const [btnLoader, setBtnLoader] = useState(false); // null = loading state
+
   const {theme} = useTheme();
   const styles = createStyles(theme);
+  const dispatch = useDispatch();
+
+  const handleCheckout = () => {
+    if (savedAddress?.addresses?.length > 0) {
+      let isDefault = savedAddress?.addresses?.find(
+        item => item?.primary == true,
+      );
+      isDefault
+        ? navigate('Payment')
+        : (ToastService.info('Please select your shipping address'),
+          navigate('AddressScreen'));
+    } else {
+      ToastService.info('Please add your shipping address'),
+        navigate('AddressScreen');
+    }
+  };
+
+  const renderItem = ({item}) => {
+    let isDefault = item?.primary == true;
+    if (isDefault) {
+      return (
+        <TouchableOpacity style={styles.addressRow} activeOpacity={0.8}>
+          <View style={styles.addressLeft}>
+            <Text style={styles.addressLabel}>{item.name}</Text>
+            <Text style={styles.addressText}>
+              {item?.city_name} , {item?.state_name} , {item?.country_name}
+            </Text>
+            <Text style={styles.addressText}>
+              {item?.address_line_1} , {item?.pincode}
+            </Text>
+            <Text style={styles.addressText}>contact no : {item?.phone}</Text>
+          </View>
+
+          {/* Custom Radio Button */}
+          <View style={[styles.radioOuter, styles.radioOuterSelected]}>
+            <View style={styles.radioInner} />
+          </View>
+        </TouchableOpacity>
+      );
+    }
+  };
 
   const _renderItem = ({item, index}) => {
     return (
-      <View
-        key={item?.id}
-        style={[
-          styles.cardRow,
-          {
-            borderBottomWidth: cartData?.length - 1 == index ? 0 : 0.6,
-          },
-        ]}>
+      <View key={item?.product_variant_id} style={styles.cardRow}>
         <View style={styles.row}>
-          <Image
-            source={{uri: item?.productImage}}
-            style={styles.productImage}
-          />
-          <View style={{marginLeft: ms(10)}}>
-            <Text style={styles.title}>{item?.title}</Text>
+          <Image source={{uri: item?.image}} style={styles.productImage} />
+          <View style={{marginLeft: ms(10), maxWidth: '80%'}}>
+            <Text style={styles.title}>{item?.name}</Text>
             <Text style={styles.size}>
               Size : {item?.selectedSize ?? 'free size'} ,
-              <Text style={styles.qty}> Qty : 1</Text>
+              <Text style={styles.qty}> Qty : {item?.quantity}</Text>
             </Text>
-            <Text style={styles.amount}>${item?.price}</Text>
+            <Text style={styles.amount}>{item?.price}</Text>
           </View>
         </View>
       </View>
@@ -57,56 +96,124 @@ const Checkout = ({route}) => {
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.shippingAddressCont}>
             <Text style={styles.headerText}>Shipping Address</Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                width: '100%',
-                marginTop: ms(10),
-                justifyContent: 'space-between',
-              }}>
-              <Image source={ICONS.location_pin} style={styles.pin} />
-              <View style={{width: '70%', marginLeft: ms(-10)}}>
-                <Text style={styles.addressType}>Home</Text>
-                <Text style={styles.address}>
-                  Address 1: Building Number: 14 Street Name: DN Block, College
-                  More State: West Bengal City: Kolkata Post Code: 700091
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() =>
-                  navigate('AddressScreen', {
-                    cartData: cartData,
-                  })
-                }
-                style={styles.changeAddBtn}>
-                <Text style={styles.addChnage}>Change</Text>
-              </TouchableOpacity>
-            </View>
+            <FlatList
+              data={savedAddress?.addresses}
+              keyExtractor={item => item.id}
+              renderItem={renderItem}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <>
+                  <TouchableOpacity
+                    onPress={() => {
+                      navigate('AddAddressScreen');
+                    }}
+                    style={styles.addNewBtn}>
+                    <Text style={styles.addNewText}>
+                      + Add New Shipping Address
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              }
+              ListFooterComponent={ 
+                savedAddress?.addresses?.length &&
+                <>
+                  <TouchableOpacity
+                    onPress={() => {
+                      navigate('AddressScreen');
+                    }}
+                    style={styles.addNewBtn}>
+                    <Text style={styles.addNewText}>
+                      + Change Shipping Address
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              }
+            />
           </View>
           <FlatList
             ListHeaderComponent={
-              <Text style={styles.productList}>Product List</Text>
+              <Text style={styles.headerText}>Product List</Text>
             }
             showsVerticalScrollIndicator={false}
-            data={cartData}
-            keyExtractor={({item, index}) => item?.id?.toString()}
+            data={cartData?.cart_items}
+            keyExtractor={(item, index) => item?.product_variant_id?.toString()}
             renderItem={_renderItem}
             scrollEnabled={false}
           />
+
+          {cartData?.cart_summary && (
+            <View style={styles.amountCont}>
+              <View style={styles.promocodeinputwrapper}>
+                <TextInput
+                  onChangeText={te => setPromocode(te)}
+                  style={styles.inputs}
+                  placeholder="promo code..."
+                  value={promocode}
+                />
+                <TouchableOpacity
+                  onPress={() => handlePromoCode()}
+                  style={styles.applyBtn}>
+                  <Text style={styles.apply}>
+                    {appliedCoupon?.code ? 'Applied' : 'Apply'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text
+                onPress={() => {
+                  dispatch(getCouponRequest());
+                  navigate('CouponList');
+                }}
+                style={styles.couponcode}>
+                View available coupon code
+              </Text>
+
+              {/* // price breakup // */}
+              <View style={styles.rowamount}>
+                <Text style={styles.lable}>Total amount</Text>
+                <Text style={styles.value}>
+                  {cartData?.cart_summary?.raw_subtotal}
+                </Text>
+              </View>
+              <View style={styles.rowamount}>
+                <Text style={styles.lable}>Tax diduction</Text>
+                <Text style={styles.value}>
+                  {cartData?.cart_summary?.total_tax}
+                </Text>
+              </View>
+              <View style={styles.rowamount}>
+                <Text style={styles.lable}>Prpmo Code discound</Text>
+                <Text style={styles.value}>
+                  {cartData?.cart_summary?.coupon_discount}
+                </Text>
+              </View>
+              <View style={styles.rowamount}>
+                <Text style={styles.lable}>Payable amount</Text>
+                <Text style={styles.value}>
+                  {cartData?.cart_summary?.final_amount}
+                </Text>
+              </View>
+
+              <View style={styles.bottomCont}>
+                <View>
+                  <Text style={styles.headerText}>Total Payable</Text>
+                  <Text style={styles.totalAmount}>
+                    {cartData?.cart_summary?.final_amount}
+                  </Text>
+                </View>
+                <CustomButton
+                  onPress={() => {
+                    handleCheckout();
+                  }}
+                  title={'Continue To Payment'}
+                  loading={btnLoader}
+                  btnStyle={styles.checkoutBtn}
+                />
+              </View>
+            </View>
+          )}
+
           <View style={styles.devider} />
         </ScrollView>
-      </View>
-
-      <View style={styles.bottom}>
-        <CustomButton
-          onPress={() =>
-            navigate('Payment', {
-              cartData: cartData,
-            })
-          }
-          title={'Continue To Payment'}
-          btnStyle={styles.checkoutBtn}
-        />
       </View>
     </View>
   );
@@ -122,7 +229,7 @@ const createStyles = theme =>
     },
     container: {
       padding: ms(15),
-      alignItems: 'center',
+      // alignItems: 'center',
     },
     headerText: {
       fontSize: fontSizes.lg,
@@ -186,12 +293,16 @@ const createStyles = theme =>
       height: '80%',
       resizeMode: 'cover',
     },
-
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
     cardRow: {
       width: '100%',
       minHeight: ms(80),
+      borderBottomWidth: 0.6,
       borderBottomColor: theme?.primary_shade,
-      marginTop: vs(10),
+      marginTop: vs(20),
       borderRadius: ms(12),
       paddingVertical: vs(10),
       flexDirection: 'row',
@@ -200,12 +311,13 @@ const createStyles = theme =>
       justifyContent: 'space-between',
       paddingRight: ms(10),
     },
-    productImage: {
+     productImage: {
       width: ms(80),
-      height: ms(80),
-      resizeMode: 'cover',
+      height: ms(90),
+      resizeMode: 'stretch',
       borderRadius: ms(12),
     },
+
     title: {
       fontSize: fontSizes.base,
       color: theme.text,
@@ -216,13 +328,6 @@ const createStyles = theme =>
       fontSize: fontSizes.sm,
       color: theme.text,
       fontFamily: fontFamily.poppins_medium,
-    },
-    devider: {
-      height: hp(15),
-    },
-    checkoutBtn: {
-      width: '100%',
-      marginTop: ms(20),
     },
     bottom: {
       position: 'absolute',
@@ -241,5 +346,146 @@ const createStyles = theme =>
 
       // Shadow for Android
       elevation: 6, // adds shadow
+    },
+
+    addressRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: vs(14),
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
+      margin: ms(16),
+    },
+
+    addressLeft: {
+      flex: 1,
+      paddingRight: 10,
+    },
+
+    addressLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#000',
+      marginBottom: 4,
+    },
+
+    addressText: {
+      fontSize: 14,
+      color: '#555',
+    },
+
+    radioOuter: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 2,
+      borderColor: '#6B4226', // brown border
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    radioInner: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: '#6B4226',
+    },
+    addNewBtn: {
+      marginVertical: vs(20),
+      marginHorizontal: ms(16),
+      paddingVertical: vs(14),
+      borderWidth: s(1),
+      borderStyle: 'dashed',
+      borderRadius: rr(10),
+      borderColor: '#6B4226',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    addNewText: {
+      fontSize: 15,
+      color: '#6B4226',
+      fontWeight: '500',
+    },
+    amountCont: {
+      width: '100%',
+      minHeight: s(60),
+      marginVertical: vs(15),
+      borderColor: theme?.primary_shade,
+      justifyContent: 'space-between',
+      // alignItems: 'center',
+    },
+    promocodeinputwrapper: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 0.6,
+      borderRadius: ms(30),
+      backgroundColor: theme?.primary_color,
+      height: s(40),
+    },
+    inputs: {
+      width: '80%',
+      height: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 0.6,
+      borderRadius: ms(30),
+      paddingLeft: ms(15),
+      backgroundColor: theme?.background,
+    },
+    rowamount: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: ms(10),
+      backgroundColor: theme?.background,
+    },
+    applyBtn: {
+      width: ms(70),
+      padding: ms(10),
+    },
+    apply: {
+      color: theme?.background,
+      fontFamily: fontFamily.playfair_medium,
+    },
+    checkoutBtn: {
+      width: ms(180),
+    },
+    devider: {
+      height: hp(10),
+    },
+    lable: {
+      fontSize: fontSizes.base,
+      fontFamily: fontFamily.playfair_medium,
+      color: theme?.gray,
+    },
+    value: {
+      fontSize: fontSizes.base,
+      fontFamily: fontFamily.poppins_medium,
+      color: theme?.text,
+    },
+    couponcode: {
+      fontSize: fontSizes.sm,
+      color: theme.primary_color,
+      textDecorationLine: 'underline',
+
+      fontFamily: fontFamily.playfair_boldItalic,
+      paddingVertical: ms(10),
+      textAlign: 'right',
+    },
+
+    bottomCont: {
+      width: '100%',
+      minHeight: s(100),
+      borderTopWidth: 0.6,
+      borderColor: theme?.primary_shade,
+      padding: ms(5),
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      flexDirection: 'row',
+      // position: 'absolute',
+      // bottom: ms(70),
     },
   });

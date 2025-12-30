@@ -69,8 +69,8 @@ const createStyle = theme =>
       marginRight: ms(10),
     },
     appLogo: {
-      width: s(120),
-      height: s(55),
+      width: s(100),
+      height: s(45),
       resizeMode: 'cover',
       marginRight: ms(10),
     },

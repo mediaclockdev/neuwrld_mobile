@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import React, {useState, useEffect, useRef, useCallback, useMemo} from 'react';
 import {
   View,
   Text,
@@ -17,38 +17,53 @@ import {ICONS} from '../../../theme/colors';
 import {goBack, navigate} from '../../../utils/rootNavigation';
 import {useTheme} from '../../../context/ThemeContext';
 import CustomButton from '../../../components/CustomButton';
-import {getItem, setItem} from '../../../utils/storage';
 import {useDispatch, useSelector} from 'react-redux';
-import {IMG_URL} from '../../../api/apiClient';
 import {
   addToWishlistRequest,
-  getCouponRequest,
   getProductDetailsRequest,
+  handleCartRemoveRequest,
   handleCartRequest,
 } from '../appReducer';
 import RenderHtml from 'react-native-render-html';
 import AppImage from '../components/AppImage';
 import {fontFamily, fontSizes} from '../../../theme/typography';
-import {animateScreenEnter} from '../../../utils/animations';
-import {useFocusEffect} from '@react-navigation/native';
 import {usePopup} from '../../../context/PopupContext';
+import {ToastService} from '../../../utils/toastService';
+import RatingsContainer from '../../../components/RatingsContainer';
+import {postApi} from '../../../api/requestApi';
 
 const ProductDetailsScreen = ({route, navigation}) => {
   const {width: contentWidth} = useWindowDimensions();
+  const [imgRatio, setImgRatio] = useState(4 / 5.8);
 
   const {theme} = useTheme();
   const styles = createStyles(theme);
-  const {isLoading, addedToCart, cart_load, productDetails} = useSelector(
+  const {removeProduct, addedToCart, cart_load, productDetails} = useSelector(
     state => state.App,
   );
   const {isGuest} = useSelector(state => state.Auth);
   const [isAuthAction, serIsAuthAction] = useState(false);
   const dispatch = useDispatch();
+  const [btnLoader, setBtnLoader] = useState(false); // null = loading state
 
-  const [Cart, setCart] = useState([]);
-  const [wishlist, setWishlist] = useState([]);
   const [productImages, setProductsImages] = useState([]);
-  const [quantity, setQuantity] = useState(0);
+  const [productSKU, setProductSKU] = useState(
+    productDetails?.product?.product_sku,
+  );
+  const [quantity, setQuantity] = useState(1);
+
+  const [price, setPrice] = useState(
+    Number(productDetails?.product?.price) || 0,
+  );
+
+  const formatedPrice = useMemo(() => {
+    if (!price) return 0;
+    return Number(String(price).replace(/[^\d.]/g, ''));
+  }, [price]);
+
+  const totalPrice = useMemo(() => {
+    return (quantity * price).toFixed(2);
+  }, [quantity, price]);
 
   const [galleryVisible, setGalleryVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -82,6 +97,37 @@ const ProductDetailsScreen = ({route, navigation}) => {
     }
   };
 
+  let rate = {
+    success: true,
+    message: 'Ratings fetched successfully',
+    data: {
+      average_rating: 4.3,
+      total_reviews: 128,
+      ratings: [
+        {
+          star: 5,
+          totalCount: 78,
+        },
+        {
+          star: 4,
+          totalCount: 32,
+        },
+        {
+          star: 3,
+          totalCount: 10,
+        },
+        {
+          star: 2,
+          totalCount: 5,
+        },
+        {
+          star: 1,
+          totalCount: 3,
+        },
+      ],
+    },
+  };
+
   const {showPopup} = usePopup();
   useEffect(() => {
     if (isGuest && isAuthAction) {
@@ -97,13 +143,76 @@ const ProductDetailsScreen = ({route, navigation}) => {
         onCancel: () => serIsAuthAction(false),
       });
     }
-  }, [isAuthAction]);
+    if (productDetails?.product?.cart_quantity) {
+      setQuantity(Number(productDetails?.product?.cart_quantity));
+    }
+  }, [isAuthAction, productDetails]);
 
-  const increaseQty = () => setQuantity(prev => prev + 1);
+  const increaseQty = () => {
+    if (quantity >= 5) {
+      ToastService.info('You may not add more then 5 quantity at a time');
+      return;
+    } else if (productDetails?.product?.is_in_cart) {
+      setBtnLoader(true);
+      let payload = {
+        product_variant_id: productDetails?.product?.id,
+        quantity: quantity + 1,
+      };
+      postApi('update-quantity', payload)
+        .then(res => {
+          console.log('pa', payload, res);
+          if (res?.data) {
+            setQuantity(prev => prev + 1);
+            setPrice(formatedPrice);
+          }
+          setBtnLoader(false);
+        })
+        .catch(err => {
+          console.log('er =>>>', err?.response), setBtnLoader(false);
+        });
+    } else {
+      setPrice(formatedPrice);
+      setQuantity(prev => prev + 1);
+    }
+  };
 
   const decreaseQty = () => {
-    if (quantity > 1) setQuantity(prev => prev - 1);
-    else setQuantity(0); // back to Add To Cart mode
+    if (productDetails?.product?.is_in_cart && quantity >= 2) {
+      setBtnLoader(true);
+      let payload = {
+        product_variant_id: productDetails?.product?.id,
+        quantity: quantity - 1,
+      };
+      postApi('update-quantity', payload)
+        .then(res => {
+          console.log('pa', payload, res);
+          if (res?.data) {
+            setQuantity(prev => prev - 1);
+            setPrice(formatedPrice);
+          }
+          setBtnLoader(false);
+        })
+        .catch(err => {
+          console.log('er =>>>', err?.response), setBtnLoader(false);
+        });
+    } else if (productDetails?.product?.is_in_cart && quantity == 1) {
+      let payload = {
+        product_variant_id: productDetails?.product?.id,
+      };
+      let screen = {
+        isCart: false,
+      };
+      dispatch(handleCartRemoveRequest(payload, screen));
+      setQuantity(0);
+      setPrice(formatedPrice);
+    } else if (quantity == 1) {
+      ToastService.info('Minimum quantity is 1');
+      return;
+    } else {
+      if (quantity > 1) setQuantity(prev => prev - 1);
+      else setQuantity(0); // back to Add To Cart mode
+      setPrice(formatedPrice);
+    }
   };
 
   // Load cart on mount
@@ -154,20 +263,31 @@ const ProductDetailsScreen = ({route, navigation}) => {
     }
   };
 
-  const _addToWishList = item => {
-    let isPresent = wishlist?.find(data => data?.id == item.id);
-    if (isPresent) {
-    }
-    const updatedCart = [...Cart, item];
-    setCart(updatedCart);
-    setItem('cart', updatedCart);
-    setAddedToCart(true);
-  };
-
   const fetchProductDetails = (item, variables) => {
-    dispatch(getProductDetailsRequest(variables?.sku ?? item?.product_sku));
+    dispatch(
+      getProductDetailsRequest(variables?.matched_sku ?? item?.product_sku),
+    );
+    setQuantity(0);
     scrollToTop();
   };
+
+  useEffect(() => {
+    if (removeProduct || addedToCart) {
+      dispatch(getProductDetailsRequest(productSKU));
+      setQuantity(0);
+      scrollToTop();
+    }
+  }, [removeProduct, addedToCart]);
+
+  useEffect(() => {
+    if (productDetails?.images?.length > 0) {
+      const img = productDetails?.images?.map(item => ({
+        uri: item?.image,
+      }));
+      setProductsImages(img);
+      setPrice(productDetails?.product?.price);
+    }
+  }, [productDetails]);
 
   const _renderproduct = ({item, index}) => {
     return (
@@ -177,12 +297,13 @@ const ProductDetailsScreen = ({route, navigation}) => {
         activeOpacity={0.85}
         onPress={() => {
           fetchProductDetails(item, '');
+          setProductSKU(item);
         }}>
         {/* PRODUCT IMAGE */}
         <View style={styles.imageBox}>
           <TouchableOpacity
             onPress={() => {
-              handleWishlist(item?.product);
+              handleWishlist(item);
             }}
             style={styles.heart}>
             <Text
@@ -203,7 +324,7 @@ const ProductDetailsScreen = ({route, navigation}) => {
 
         {/* TITLE */}
         <Text numberOfLines={1} style={styles.name}>
-          {item?.name}
+          {item?.product_name}
         </Text>
 
         {/* PRICE ROW */}
@@ -216,12 +337,13 @@ const ProductDetailsScreen = ({route, navigation}) => {
         </View>
 
         {/* WISHLIST + RATING */}
-        <View style={styles.bottomRow}>
+        {item?.avg_rating > 0 ? (
           <View style={styles.ratingBox}>
             <Text style={styles.rate}>⭐ </Text>
             <Text style={styles.ratingText}>{item?.avg_rating}</Text>
           </View>
-        </View>
+        ) : null}
+        <View style={styles.bottomRow}></View>
       </TouchableOpacity>
     );
   };
@@ -247,10 +369,17 @@ const ProductDetailsScreen = ({route, navigation}) => {
           }
         />
         {/* Product Main Image */}
-        <View style={styles.mainImageCont}>
+        <View style={[styles.mainImageCont, {aspectRatio: imgRatio}]}>
           <Image
             source={{uri: productDetails?.product?.image}}
             style={styles.mainImage}
+            resizeMode="contain"
+            onLoad={({nativeEvent}) => {
+              const {width, height} = nativeEvent.source;
+              if (width && height) {
+                setImgRatio(width / height);
+              }
+            }}
           />
         </View>
 
@@ -293,13 +422,39 @@ const ProductDetailsScreen = ({route, navigation}) => {
           <Text style={styles.category}>
             {productDetails?.product?.category}
           </Text>
-          <Text style={styles.headerText}>{productDetails?.product?.name}</Text>
+          <Text style={styles.headerText}>
+            {productDetails?.product?.product_name}
+          </Text>
+          {productDetails?.product?.total_rating > 0 && (
+            <View style={styles.ratingRow}>
+              <Text style={styles.star}>⭐</Text>
+              <Text style={styles.rating}>
+                {productDetails?.product?.total_rating}
+              </Text>
+            </View>
+          )}
 
-          <View style={styles.ratingRow}>
-            <Text style={styles.star}>⭐</Text>
-            <Text style={styles.rating}>
-              {productDetails?.product?.total_rating}
-            </Text>
+          <View style={{alignItems: 'flex-end', marginTop: vs(15)}}>
+            {productDetails?.product?.out_of_stock ? (
+              <Text
+                style={{
+                  fontSize: fontSizes.base,
+                  color: theme?.error,
+                  fontFamily: fontFamily.playfair_mediumItalic,
+                }}>
+                Out Of Stock!
+              </Text>
+            ) : (
+              <View style={styles.qtyContainer}>
+                <TouchableOpacity style={styles.qtyBtn} onPress={decreaseQty}>
+                  <Text style={styles.qtyText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.qtyNumber}>{quantity}</Text>
+                <TouchableOpacity style={styles.qtyBtn} onPress={increaseQty}>
+                  <Text style={styles.qtyText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           <Text style={styles.sectionTitle}>Product Details</Text>
@@ -325,7 +480,9 @@ const ProductDetailsScreen = ({route, navigation}) => {
                       styles.sizeButton,
                       data?.is_current && styles.activeSize,
                     ]}
-                    onPress={() => fetchProductDetails(item, data)}>
+                    onPress={() => {
+                      fetchProductDetails('', data), setProductSKU(data);
+                    }}>
                     <Text
                       style={[
                         styles.sizeText,
@@ -360,8 +517,24 @@ const ProductDetailsScreen = ({route, navigation}) => {
             renderItem={_renderproduct}
             numColumns={2}
             scrollEnabled={false}
-            ListFooterComponent={<View style={styles.devider} />}
+            ListFooterComponent={
+              <View style={[styles.devider, {height: hp(1.5)}]} />
+            }
           />
+          <View style={{alignItems: 'flex-start'}}>
+            <Text
+              style={{
+                fontSize: fontSizes.base,
+                fontFamily: fontFamily.playfair_medium,
+                color: theme?.gray,
+                lineHeight: ms(25),
+                paddingBottom: vs(10),
+              }}>
+              Review & Ratings Of Product
+            </Text>
+            <RatingsContainer productRate={rate?.data} theme={theme} />
+          </View>
+          <View style={styles.devider} />
         </View>
       </ScrollView>
 
@@ -372,29 +545,32 @@ const ProductDetailsScreen = ({route, navigation}) => {
           <Text style={styles.old_price}>
             {productDetails?.product?.old_price}
           </Text>
-          <Text style={styles.price}>{productDetails?.product?.price}</Text>
+          <Text style={styles.price}>
+            {totalPrice > 0
+              ? `$ ${totalPrice}`
+              : productDetails?.product?.price || '$ 0.00'}
+          </Text>
+
+          {/* <Text style={styles.price}>{productDetails?.product?.price}</Text> */}
         </View>
-        <View>
-          <View style={styles.qtyContainer}>
-            <TouchableOpacity style={styles.qtyBtn} onPress={decreaseQty}>
-              <Text style={styles.qtyText}>-</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.qtyNumber}>{quantity}</Text>
-
-            <TouchableOpacity style={styles.qtyBtn} onPress={increaseQty}>
-              <Text style={styles.qtyText}>+</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={{alignItems: 'flex-end'}}>
           <CustomButton
             leftIcon={ICONS.add_to_cart}
-            disabled={quantity == 0 ? true : false}
+            disabled={
+              quantity == 0 && productDetails?.product?.is_in_cart == false
+                ? true
+                : false
+            }
             leftIconStyle={styles.cart}
             btnStyle={styles.addButton}
-            loading={cart_load}
-            title={addedToCart ? 'View Cart' : 'Add To Cart'}
+            loading={cart_load || btnLoader}
+            title={
+              addedToCart || productDetails?.product?.is_in_cart
+                ? 'View Cart'
+                : 'Add To Cart'
+            }
             onPress={() => {
-              addedToCart
+              addedToCart || productDetails?.product?.is_in_cart
                 ? navigation?.navigate('MyTabs', {screen: 'Cart'})
                 : _addToCart(productDetails?.product);
             }}
@@ -425,14 +601,28 @@ const createStyles = theme =>
     },
     mainImageCont: {
       width: '100%',
-      height: s(400),
-      borderRadius: rr(8),
+      backgroundColor: '#fff',
+      justifyContent: 'center',
+      alignItems: 'center',
       overflow: 'hidden',
     },
-    mainImage: {width: '100%', height: '100%', resizeMode: 'contain'},
-    carousel: {marginVertical: 10, paddingHorizontal: 10},
-    thumbnailWrapper: {marginRight: 8, position: 'relative'},
-    thumbnail: {width: 70, height: 90, borderRadius: 10},
+
+    mainImage: {
+      width: '100%',
+      height: '100%',
+    },
+    carousel: {margin: ms(10), paddingHorizontal: ms(5)},
+    thumbnailWrapper: {
+      marginRight: ms(10),
+      position: 'relative',
+      padding: ms(2),
+    },
+    thumbnail: {
+      width: ms(70),
+      height: vs(90),
+      borderRadius: ms(5),
+      resizeMode: 'stretch',
+    },
     overlay: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: 'rgba(0,0,0,0.4)',
@@ -468,15 +658,15 @@ const createStyles = theme =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      padding: 15,
+      paddingHorizontal: ms(10),
       borderTopWidth: 1,
       borderColor: '#eee',
       backgroundColor: '#fff',
     },
     addButton: {
       backgroundColor: theme.primary_color,
-      paddingVertical: vs(10),
-      paddingHorizontal: ms(15),
+      height: ms(40),
+      width: ms(140),
       borderRadius: rr(22),
       flexDirection: 'row',
       alignItems: 'center',
@@ -615,10 +805,11 @@ const createStyles = theme =>
       paddingHorizontal: 5,
       paddingVertical: 5,
       justifyContent: 'space-between',
+      width: ms(100),
     },
     qtyBtn: {
-      width: 35,
-      height: 35,
+      width: ms(20),
+      height: ms(20),
       borderRadius: 30,
       backgroundColor: '#D4B183',
       alignItems: 'center',
@@ -626,7 +817,7 @@ const createStyles = theme =>
     },
     qtyText: {
       color: '#fff',
-      fontSize: 20,
+      fontSize: ms(12),
       fontWeight: '600',
     },
 

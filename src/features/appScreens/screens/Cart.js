@@ -13,23 +13,25 @@ import {useFocusEffect} from '@react-navigation/native';
 import {getItem} from '../../../utils/storage';
 import CartPlaceholder from '../Skeleton/CartPlaceholder';
 import {useTheme} from '../../../context/ThemeContext';
-import {hp, ms, s, vs} from '../../../utils/responsive';
+import {hp, ms, s, vs, wp} from '../../../utils/responsive';
 import {fontFamily, fontSizes} from '../../../theme/typography';
 import CustomButton from '../../../components/CustomButton';
 import {goBack, navigate} from '../../../utils/rootNavigation';
 import {useDispatch, useSelector} from 'react-redux';
 import {
+  getAddressRequest,
   getCartRequest,
   getCouponRequest,
   handleCartRemoveRequest,
 } from '../appReducer';
 import {postApi} from '../../../api/requestApi';
 import {usePopup} from '../../../context/PopupContext';
+import {ToastService} from '../../../utils/toastService';
+import {IMAGES} from '../../../theme/colors';
 
 const Cart = () => {
-  const {customerDash, isLoading, appliedCoupon, cartData} = useSelector(
-    state => state.App,
-  );
+  const {customerDash, isLoading, savedAddress, appliedCoupon, cartData} =
+    useSelector(state => state.App);
 
   const {isGuest} = useSelector(state => state.Auth);
   const [showPopupVisible, setShowPopupVisible] = useState(true);
@@ -62,9 +64,9 @@ const Cart = () => {
       return;
     } else {
       setBtnLoader(true);
-
       postApi('update-quantity', payload)
         .then(res => {
+          console.log('pa', payload, res);
           if (res?.data) {
             dispatch(getCartRequest());
           }
@@ -92,6 +94,7 @@ const Cart = () => {
         });
       } else {
         dispatch(getCartRequest(appliedCoupon?.code || ''));
+        dispatch(getAddressRequest());
       }
     }, [appliedCoupon]),
   );
@@ -106,11 +109,14 @@ const Cart = () => {
         cancelText: 'Cancel',
         showCancel: true,
         onConfirm: () => {
-          dispatch(
-            handleCartRemoveRequest({
-              product_variant_id: showModal?.item?.product_variant_id,
-            }),
-          );
+          let payload = {
+            product_variant_id: showModal?.item?.product_variant_id,
+          };
+          let screen = {
+            isCart: true,
+          };
+          dispatch(handleCartRemoveRequest({payload, screen}));
+
           setShowModal({visible: false, item: null});
         },
         onCancel: () => {
@@ -126,12 +132,14 @@ const Cart = () => {
         <View style={styles.row}>
           <Image source={{uri: item?.image}} style={styles.productImage} />
           <View style={{marginLeft: ms(10), maxWidth: '60%'}}>
-            <Text style={styles.title}>{item?.name}</Text>
+            <Text style={styles.title}>{item?.product_name}</Text>
             <Text style={styles.size}>
-              Size : {item?.selectedSize ?? 'free size'} ,
+              Size : {item?.attributes?.Size ?? 'free size'} ,
               <Text style={styles.qty}> Qty : {item?.quantity}</Text>
             </Text>
-            <Text style={styles.amount}>${item?.price}</Text>
+            <Text style={styles.size}> </Text>
+
+            <Text style={styles.amount}>{item?.price}</Text>
           </View>
         </View>
         <View style={styles.qtyBtn}>
@@ -164,7 +172,6 @@ const Cart = () => {
     );
   };
 
-  const handlePromoCode = () => {};
   if (isLoading) {
     return <CartPlaceholder />;
   } else {
@@ -173,93 +180,63 @@ const Cart = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.container}>
-          <Text style={styles.headerText}>My Cart</Text>
+          <Text style={styles.headerText}>🛍️ Your Cart</Text>
+          <Text style={styles.SubheaderText}>
+            All the good stuff you picked ✨
+          </Text>
 
           <FlatList
             data={cartData?.cart_items}
-            keyExtractor={(item, index) => item?.product_variant_id?.toString()}
+            keyExtractor={(item, index) => item?.product_variant_id}
             renderItem={_renderItem}
             scrollEnabled={false}
             ListEmptyComponent={() => {
               return (
-                <Text style={{color: theme?.text}}>Your cart is empty</Text>
+                <View
+                  style={{
+                    width: wp(90),
+                    height: hp(70),
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                  <Image
+                    style={{
+                      width: ms(200),
+                      height: ms(200),
+                      resizeMode: 'contain',
+                    }}
+                    source={IMAGES.noData}
+                  />
+                  <Text style={styles.emptyText}>
+                    Oops! Nothing here yet 👀{'\n'}Let’s find something you’ll
+                    love.
+                  </Text>
+                  <CustomButton
+                    onPress={() => {
+                      navigate('Categories');
+                    }}
+                    btnStyle={{width: ms(140)}}
+                    title={'Explore Trends'}
+                  />
+                </View>
               );
             }}
           />
-
-          {cartData?.cart_summary && (
-            <View style={styles.amountCont}>
-              <View style={styles.promocodeinputwrapper}>
-                <TextInput
-                  onChangeText={te => setPromocode(te)}
-                  style={styles.inputs}
-                  placeholder="promo code..."
-                  value={promocode}
-                />
-                <TouchableOpacity
-                  onPress={() => handlePromoCode()}
-                  style={styles.applyBtn}>
-                  <Text style={styles.apply}>
-                    {appliedCoupon?.code ? 'Applied' : 'Apply'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <Text
-                onPress={() => {
-                  dispatch(getCouponRequest());
-                  navigate('CouponList');
-                }}
-                style={styles.couponcode}>
-                View available coupon code
-              </Text>
-
-              {/* // price breakup // */}
-              <View style={styles.rowamount}>
-                <Text style={styles.lable}>Total amount</Text>
-                <Text style={styles.value}>
-                  {cartData?.cart_summary?.raw_subtotal}
-                </Text>
-              </View>
-              <View style={styles.rowamount}>
-                <Text style={styles.lable}>Tax diduction</Text>
-                <Text style={styles.value}>
-                  {cartData?.cart_summary?.total_tax}
-                </Text>
-              </View>
-              <View style={styles.rowamount}>
-                <Text style={styles.lable}>Prpmo Code discound</Text>
-                <Text style={styles.value}>
-                  {cartData?.cart_summary?.coupon_discount}
-                </Text>
-              </View>
-              <View style={styles.rowamount}>
-                <Text style={styles.lable}>Payable amount</Text>
-                <Text style={styles.value}>
-                  {cartData?.cart_summary?.final_amount}
-                </Text>
-              </View>
-
-              <View style={styles.bottomCont}>
-                <View>
-                  <Text style={styles.headerText}>Total Payable</Text>
-                  <Text style={styles.totalAmount}>
-                    {cartData?.cart_summary?.final_amount}
-                  </Text>
-                </View>
-                <CustomButton
-                  // onPress={() =>
-                  //   navigate('Checkout', {
-                  //     cartData: cart,
-                  //   })
-                  // }
-                  title={'Checkout'}
-                  loading={btnLoader}
-                  btnStyle={styles.checkoutBtn}
-                />
-              </View>
+          {cartData?.cart_items?.length > 0 && (
+            <View
+              style={{
+                justifyContent: 'flex-end',
+                alignItems: 'flex-end',
+                marginTop: vs(10),
+              }}>
+              <CustomButton
+                onPress={() => navigate('Checkout', {})}
+                title={'Continue To Checkout'}
+                loading={btnLoader}
+                btnStyle={styles.checkoutBtn}
+              />
             </View>
           )}
-
           <View style={styles.devider} />
         </ScrollView>
       </View>
@@ -276,12 +253,29 @@ const createStyles = theme =>
       backgroundColor: theme?.background,
     },
     container: {
-      paddingHorizontal: ms(15),
+      padding: ms(15),
     },
     headerText: {
-      fontSize: fontSizes.lg,
-      color: theme.text,
-      fontFamily: fontFamily.playfair_semiBold,
+      fontSize: fontSizes.xl,
+      color: theme.primary_color,
+      fontFamily: fontFamily.playfair_medium,
+      letterSpacing: 0.5,
+    },
+    SubheaderText: {
+      fontSize: fontSizes.base,
+      color: theme.gray,
+      lineHeight: ms(25),
+      fontFamily: fontFamily.playfair_italic,
+      marginBottom: vs(20),
+      letterSpacing: 0.5,
+    },
+
+    emptyText: {
+      fontSize: fontSizes.base,
+      color: theme.primary_color,
+      fontFamily: fontFamily.playfair_mediumItalic,
+      textAlign: 'center',
+      lineHeight: vs(25),
     },
     row: {
       flexDirection: 'row',
@@ -292,7 +286,7 @@ const createStyles = theme =>
       minHeight: ms(80),
       borderBottomWidth: 0.6,
       borderBottomColor: theme?.primary_shade,
-      marginTop: vs(20),
+      marginTop: vs(10),
       borderRadius: ms(12),
       paddingVertical: vs(10),
       flexDirection: 'row',
@@ -303,8 +297,8 @@ const createStyles = theme =>
     },
     productImage: {
       width: ms(80),
-      height: ms(80),
-      resizeMode: 'cover',
+      height: ms(90),
+      resizeMode: 'stretch',
       borderRadius: ms(12),
     },
     title: {
@@ -390,6 +384,7 @@ const createStyles = theme =>
       marginVertical: vs(15),
       borderColor: theme?.primary_shade,
       justifyContent: 'space-between',
+
       // alignItems: 'center',
     },
     promocodeinputwrapper: {
@@ -428,7 +423,7 @@ const createStyles = theme =>
       fontFamily: fontFamily.playfair_medium,
     },
     checkoutBtn: {
-      width: ms(100),
+      width: ms(170),
     },
     devider: {
       height: hp(10),

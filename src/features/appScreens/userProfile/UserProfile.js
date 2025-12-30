@@ -18,9 +18,10 @@ import {navigate} from '../../../utils/rootNavigation';
 import LogoutSheet from '../components/LogoutPop';
 import {setUser} from '../../../utils/authStorage';
 import UploadMedia from '../components/UploadMedia';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import {usePopup} from '../../../context/PopupContext';
+import {getAddressRequest} from '../appReducer';
 
 const UserProfile = () => {
   const {theme} = useTheme();
@@ -28,6 +29,7 @@ const UserProfile = () => {
   const {customerDash, userdetails, isLoading} = useSelector(
     state => state.App,
   );
+  const dispatch = useDispatch();
 
   const {token, isGuest} = useSelector(state => state.Auth);
   const [showPopupVisible, setShowPopupVisible] = useState(true);
@@ -94,13 +96,14 @@ const UserProfile = () => {
         navigate('ProfileDetails');
         break;
       case 'saved':
+        dispatch(getAddressRequest());
         navigate('AddressScreen');
         break;
       case 'logout':
         handleLogout();
         break;
       case 'login':
-        navigate('Login');
+        navigate('Signup');
         break;
       default:
         break;

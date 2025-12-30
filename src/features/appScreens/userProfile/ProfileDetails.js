@@ -19,10 +19,14 @@ const ProfileDetails = () => {
   const {theme} = useTheme();
   const styles = createStyles(theme);
 
+
+  
+
+
   const renderProfile = item => {
-    item?.slug === 'basic_info'
-      ? navigate('UpdateProfile')
-      : navigate('UserAvatar');
+    // item?.slug === 'basic_info'
+    //   ? navigate('UpdateProfile')
+    //   : navigate('UserAvatar');
   };
   return (
     <View style={styles.parent}>

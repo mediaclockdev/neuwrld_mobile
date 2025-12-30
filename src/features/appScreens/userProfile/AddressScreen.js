@@ -14,6 +14,11 @@ import SubHeader from '../components/SubHeader';
 import CustomButton from '../../../components/CustomButton';
 import {ms, vs, s, rr} from '../../../utils/responsive';
 import {fontFamily, fontSizes} from '../../../theme/typography';
+import {useDispatch, useSelector} from 'react-redux';
+import {ALL_APi_LIST} from '../../../utils/apis';
+import {postApi} from '../../../api/requestApi';
+import {ToastService} from '../../../utils/toastService';
+import {getAddressRequest} from '../appReducer';
 
 const addresses = [
   {
@@ -39,23 +44,70 @@ const addresses = [
 ];
 
 export default function AddressScreen() {
-
   const {theme} = useTheme();
   const styles = createStyles(theme);
+  const {
+    customerDash,
+    isLoading,
+    savedAddress,
+    userdetails,
+    appliedCoupon,
+    cartData,
+  } = useSelector(state => state.App);
+  const [loading, setLoading] = useState(false);
 
-  const [selectedId, setSelectedId] = useState('1');
+  const [selectedId, setSelectedId] = useState('');
+  const dispatch = useDispatch();
+
+  const onSubmit = () => {
+    setLoading(true);
+    let payload = {
+      id: selectedId?.id,
+      name: selectedId?.name,
+      email: userdetails?.email,
+      phone: selectedId?.phone,
+      pincode: selectedId?.pincode,
+      state_id: selectedId?.state_id,
+      country_id: selectedId?.country_id,
+      address_line_1: selectedId?.address_line_1,
+      address_line_2: selectedId?.address_line_2,
+      landmark: selectedId?.landmark,
+      city_name: selectedId?.city_name,
+      primary: true,
+    };
+    postApi(ALL_APi_LIST.address, payload)
+      .then(res => {
+        if (res?.data) {
+          ToastService.success(
+            'Your default address has been updated , happy shopping',
+          );
+          dispatch(getAddressRequest());
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.log('err', err);
+        setLoading(false);
+      });
+  };
 
   const renderItem = ({item}) => {
-    const isSelected = item.id === selectedId;
+    const isSelected = item.id === selectedId?.id || item?.primary;
 
     return (
       <TouchableOpacity
         style={styles.addressRow}
-        onPress={() => setSelectedId(item.id)}
+        onPress={() => setSelectedId(item)}
         activeOpacity={0.8}>
         <View style={styles.addressLeft}>
-          <Text style={styles.addressLabel}>{item.label}</Text>
-          <Text style={styles.addressText}>{item.address}</Text>
+          <Text style={styles.addressLabel}>{item.name}</Text>
+          <Text style={styles.addressText}>
+            {item?.city_name} , {item?.state_name} , {item.country_name}
+          </Text>
+          <Text style={styles.addressText}>
+            {item?.address_line_1} , {item.pincode}
+          </Text>
+          <Text style={styles.addressText}>contact no : {item?.phone}</Text>
         </View>
 
         {/* Custom Radio Button */}
@@ -75,7 +127,7 @@ export default function AddressScreen() {
       />
 
       <FlatList
-        data={addresses}
+        data={savedAddress?.addresses}
         keyExtractor={item => item.id}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
@@ -88,7 +140,6 @@ export default function AddressScreen() {
               style={styles.addNewBtn}>
               <Text style={styles.addNewText}>+ Add New Shipping Address</Text>
             </TouchableOpacity>
-           
           </>
         }
       />
@@ -96,8 +147,9 @@ export default function AddressScreen() {
       {/* Bottom Fixed Button */}
       <View style={styles.bottomBar}>
         <CustomButton
-          onPress={() => goBack()}
+          onPress={() => onSubmit()}
           title={'Apply & Continue'}
+          loading={loading}
           btnStyle={styles.checkoutBtn}
         />
       </View>
@@ -110,6 +162,7 @@ const createStyles = theme =>
     container: {
       flex: 1,
       backgroundColor: '#fff',
+      paddingVertical: ms(10),
     },
 
     addressRow: {
@@ -165,6 +218,7 @@ const createStyles = theme =>
       borderColor: '#6B4226',
       alignItems: 'center',
       justifyContent: 'center',
+      marginBottom:100
     },
 
     addNewText: {

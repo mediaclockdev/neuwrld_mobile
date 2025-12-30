@@ -46,15 +46,26 @@ const Categories = () => {
   // CATEGORY CARDS
   const renderCategoryItem = useCallback(
     ({item}) => (
+      console.log("item?.name?.toLowerCase()",item?.name?.toLowerCase()),
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={() => handleOpenSubCategory(item)}
         style={styles.card}>
         <AppImage
           uri={optimizedImage(item.image)}
+          borderRadius={ms(5)}
           style={styles.CategoryImage}
         />
-        <Text style={styles.title}>{item?.name}</Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding:ms(5)
+          }}>
+          <Text style={styles.title}>{item?.name?.toLowerCase() === 'men' ? 'For Him' : 'For Her'}</Text>
+          <Text style={styles.subTitle}>{item?.name?.toLowerCase() === 'women' ? 'Fresh looks, just dropped ✨' : 'Everyday fits, leveled up'}</Text>
+        </View>
       </TouchableOpacity>
     ),
     [handleOpenSubCategory],
@@ -63,7 +74,7 @@ const Categories = () => {
   // SUB CHILDREN GRID ITEMS
   const renderSubChild = useCallback(
     ({item}) => (
-      <View style={styles.subChildWrapper}>
+      <View style={[styles.subChildWrapper]}>
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => {
@@ -94,7 +105,10 @@ const Categories = () => {
             `${child?.id ?? child?.title ?? index}-${index}`
           }
           nestedScrollEnabled
-          columnWrapperStyle={{justifyContent: 'space-between'}}
+          columnWrapperStyle={{
+            justifyContent:
+              item?.children?.length == 2 ? 'space-evenly' : 'space-between',
+          }}
           showsVerticalScrollIndicator={false}
         />
       </View>
@@ -106,7 +120,8 @@ const Categories = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerText}>Category</Text>
+      <Text style={styles.headerText}>Discover</Text>
+      <Text style={styles.SubheaderText}>Discover new styles with us ✨</Text>
 
       {/* MAIN CATEGORY LIST */}
       <FlatList
@@ -158,8 +173,14 @@ const createStyles = theme =>
 
     headerText: {
       fontSize: fontSizes.xl,
-      color: theme.text,
-      fontFamily: fontFamily.playfair_semiBold,
+      color: theme.primary_color,
+      fontFamily: fontFamily.playfair_medium,
+      letterSpacing: 0.5,
+    },
+    SubheaderText: {
+      fontSize: fontSizes.base,
+      color: theme.gray,
+      fontFamily: fontFamily.playfair_italic,
       marginBottom: vs(20),
       letterSpacing: 0.5,
     },
@@ -168,6 +189,7 @@ const createStyles = theme =>
       width: '100%',
       backgroundColor: '#fafafa',
       borderRadius: rr(10),
+      overflow:'hidden',
       padding: ms(5),
       marginBottom: vs(15),
       position: 'relative',
@@ -176,7 +198,6 @@ const createStyles = theme =>
     CategoryImage: {
       width: '100%',
       aspectRatio: 16 / 9, // safe, scalable, responsive
-      borderRadius: rr(14),
       backgroundColor: '#f0f0f0', // avoids layout jump while loading
     },
 
@@ -185,6 +206,12 @@ const createStyles = theme =>
       fontFamily: fontFamily.playfair_medium,
       textAlign: 'center',
       color: theme.text,
+    },
+    subTitle: {
+      fontSize: fontSizes.sm,
+      fontFamily: fontFamily.playfair_italic,
+      textAlign: 'center',
+      color: theme.gray,
     },
 
     /* MODAL HEADER */
@@ -211,7 +238,7 @@ const createStyles = theme =>
 
     /* GRID CHILD ITEM */
     subChildWrapper: {
-      width: '29%',
+      width: '30%',
       marginVertical: vs(10),
       alignItems: 'center',
     },

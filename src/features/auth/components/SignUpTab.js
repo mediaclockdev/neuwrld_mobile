@@ -120,6 +120,7 @@ const styles = StyleSheet.create({
   miniIcon:{
     width:s(20),
     height:vs(20),
-    marginRight:ms(5)
+    marginRight:ms(5),
+    resizeMode:'contain'
   }
 });

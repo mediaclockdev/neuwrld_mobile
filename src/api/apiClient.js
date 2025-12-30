@@ -64,8 +64,8 @@ import {getToken, refreshAuthToken} from './tokenManager';
 
 // replace with your base URL
 export const API_BASE_URL =
-  'https://maroon-crane-692077.hostingersite.com/nuworld_v3/api/v1/';
-export const IMG_URL = 'https://maroon-crane-692077.hostingersite.com/';
+  'http://maroon-crane-692077.hostingersite.com/nuworld_v3/api/v1/';
+export const IMG_URL = 'http://maroon-crane-692077.hostingersite.com/';
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 60000,

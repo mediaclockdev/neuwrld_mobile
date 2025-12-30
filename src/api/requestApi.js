@@ -11,7 +11,7 @@ import { getToken } from '../utils/authStorage';
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 20000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'content-type': 'application/json' },
 });
 
 // -------------------------------------------------------------
@@ -155,8 +155,8 @@ export async function postApi(url, body = {}, isForm = false) {
 
   const headers = {
     ...(isForm
-      ? { "Content-Type": "multipart/form-data" }
-      : { "Content-Type": "application/json" }),
+      ? { "content-type": "multipart/form-data" }
+      : { "content-type": "application/json" }),
   };
 
   const call = () => axiosInstance.post(url, body, { headers });

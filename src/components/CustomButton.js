@@ -7,6 +7,8 @@ import {
   Image,
 } from 'react-native';
 import {useTheme} from '../context/ThemeContext';
+import { ms, vs } from '../utils/responsive';
+import { fontFamily, fontSizes } from '../theme/typography';
 
 const CustomButton = ({
   title,
@@ -20,7 +22,6 @@ const CustomButton = ({
   leftIconStyle,
 }) => {
   const {theme} = useTheme();
-
   return (
     <TouchableOpacity
       style={[
@@ -40,7 +41,7 @@ const CustomButton = ({
       {leftIcon ? <Image source={leftIcon} style={leftIconStyle} /> : null}
 
       {loading ? (
-        <ActivityIndicator color={textColor} />
+        <ActivityIndicator size={'small'} color={textColor} />
       ) : (
         <Text style={[styles.text, {color: textColor}]}>{title}</Text>
       )}
@@ -50,15 +51,15 @@ const CustomButton = ({
 
 const styles = StyleSheet.create({
   button: {
-    height: 50,
-    borderRadius: 10,
+    height: vs(40),
+    borderRadius: ms(6),
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 10,
   },
   text: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: fontSizes.base,
+    fontFamily:fontFamily.playfair_black,
   },
 });
 

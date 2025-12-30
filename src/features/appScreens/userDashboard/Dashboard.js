@@ -9,6 +9,8 @@ import {
   Image,
   FlatList,
 } from 'react-native';
+import axios from 'axios';
+
 import React, {useCallback, useEffect, useState} from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import CustomHeader from '../../../components/CustomHeader';
@@ -44,7 +46,9 @@ const Dashboard = () => {
   const {theme} = useTheme();
   const styles = createStyles(theme);
 
-  const {customerDash, isLoading} = useSelector(state => state.App);
+  const {customerDash, isSuccess, isLoading, productDetails} = useSelector(
+    state => state.App,
+  );
   const dispatch = useDispatch();
   const {isGuest} = useSelector(state => state.Auth);
   const [isAuthAction, serIsAuthAction] = useState(false);
@@ -56,6 +60,12 @@ const Dashboard = () => {
       dispatch(getCustomerDashRequest());
     }, []),
   );
+
+  useEffect(() => {
+    if (isSuccess && productDetails) {
+      navigate('ProductDetailsScreen');
+    }
+  }, [isSuccess]);
 
   const {showPopup} = usePopup();
   useEffect(() => {
@@ -75,6 +85,7 @@ const Dashboard = () => {
   }, [isAuthAction]);
 
   const _handleProductClick = item => {
+    console.log(item);
     dispatch(getProductDetailsRequest(item?.product_sku));
   };
 
@@ -82,6 +93,7 @@ const Dashboard = () => {
     const id = item?.slug;
     dispatch(getProductRequest(id));
   };
+
   const handleWishlist = item => {
     if (isGuest) {
       serIsAuthAction(true);
@@ -89,7 +101,7 @@ const Dashboard = () => {
     } else {
       let screen = 'dashboard';
       let payload = {
-        product_variant_id: item?.product_id,
+        product_variant_id: item?.id,
         is_saved_for_later: 1,
         quantity: 1,
       };
@@ -139,7 +151,7 @@ const Dashboard = () => {
 
         {/* TITLE */}
         <Text numberOfLines={1} style={styles.name}>
-          {item?.name}
+          {item?.product_name}
         </Text>
 
         {/* PRICE ROW */}
@@ -153,10 +165,12 @@ const Dashboard = () => {
 
         {/* WISHLIST + RATING */}
         <View style={styles.bottomRow}>
-          <View style={styles.ratingBox}>
-            <Text style={styles.rate}>⭐ </Text>
-            <Text style={styles.ratingText}>{item?.avg_rating}</Text>
-          </View>
+          {item?.avg_rating && (
+            <View style={styles.ratingBox}>
+              <Text style={styles.rate}>⭐ </Text>
+              <Text style={styles.ratingText}>{item?.avg_rating}</Text>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -221,31 +235,32 @@ const Dashboard = () => {
             </View>
           ))}
         </View>
-
-        <FlatList
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View
-              style={[
-                styles.headerRow,
-                {
-                  marginVertical: ms(10),
-                },
-              ]}>
-              <Text style={styles.headerText}>Most Popular</Text>
-            </View>
-          }
-          style={{marginTop: vs(6)}}
-          data={customerDash?.latest_products}
-          keyExtractor={({item, index}) => String(index)}
-          renderItem={({item, index}) => (
-            <ProductCard item={item} index={index} />
-          )}
-          // renderItem={_renderproduct}
-          numColumns={2}
-          scrollEnabled={false}
-          ListFooterComponent={<View style={styles.devider} />}
-        />
+        {customerDash?.latest_products && (
+          <FlatList
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View
+                style={[
+                  styles.headerRow,
+                  {
+                    marginVertical: ms(10),
+                  },
+                ]}>
+                <Text style={styles.headerText}>Most Popular</Text>
+              </View>
+            }
+            style={{marginTop: vs(6)}}
+            data={customerDash?.latest_products}
+            keyExtractor={({item, index}) => String(index)}
+            renderItem={({item, index}) => (
+              <ProductCard item={item} index={index} />
+            )}
+            // renderItem={_renderproduct}
+            numColumns={2}
+            scrollEnabled={false}
+            ListFooterComponent={<View style={styles.devider} />}
+          />
+        )}
 
         <FlatList
           ListHeaderComponent={
@@ -305,8 +320,9 @@ const createStyles = theme =>
     },
     headerText: {
       fontSize: fontSizes.xl,
-      color: theme.text,
-      fontFamily: fontFamily.playfair_semiBold,
+      color: theme.primary_color,
+      fontFamily: fontFamily.playfair_medium,
+      letterSpacing: 0.5,
     },
     subheaderText: {
       fontSize: fontSizes.sm,
@@ -338,7 +354,7 @@ const createStyles = theme =>
 
     productImage: {
       width: '100%',
-      aspectRatio: 3 / 4, // portrait orientation // safe, scalable, responsive
+      aspectRatio: 3 / 5, // portrait orientation // safe, scalable, responsive
       borderRadius: rr(10),
     },
 
@@ -365,7 +381,6 @@ const createStyles = theme =>
       borderRadius: 18,
       overflow: 'hidden',
       margin: '2%',
-
       shadowColor: '#000',
       shadowOpacity: 0.06,
       shadowRadius: 5,
@@ -375,7 +390,7 @@ const createStyles = theme =>
 
     imageBox: {
       width: '100%',
-      aspectRatio: 3 / 3.5,
+      aspectRatio: 3 / 3.8,
       borderRadius: 16,
       backgroundColor: '#f3f3f3',
       overflow: 'hidden',

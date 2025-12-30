@@ -66,6 +66,8 @@ const Signup = ({navigation}) => {
 
   const [isOtpModalVisible, setOtpModalVisible] = useState(false);
   const [buttonLoader, setButtonLoader] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpButtonLoader, setOtpButtonLoader] = useState(false);
   const [hashCode, setHashCode] = useState({
     hashCode: '',
     regReqData: '',
@@ -145,6 +147,7 @@ const Signup = ({navigation}) => {
         setOtpModalVisible(true);
       })
       .catch(err => {
+        console.log('errerrerr', err?.response);
         setButtonLoader(false);
         getErrorMessage(
           err?.response?.data?.response_code,
@@ -180,7 +183,7 @@ const Signup = ({navigation}) => {
 
   const handleEmailValidate = otp => {
     if (otp) {
-      setButtonLoader(true);
+      setOtpButtonLoader(true);
       let payload = {
         email: hashCode?.regReqData,
         hash: hashCode?.hashCode,
@@ -194,11 +197,12 @@ const Signup = ({navigation}) => {
             setTimeout(() => {
               postApi('refresh-token').then(res => {
                 if (res?.data?.refresh_token) {
+                  setOtpButtonLoader(false);
                   showPopup({
                     type: 'success',
                     title: 'Done!',
                     message:
-                      'Successfully signup/signin , thank you for choosing us  🎉',
+                      'Successfully signup or signin , thank you for choosing us  🎉',
                     confirmText: 'Continue to explore',
                     onConfirm: () => handleAuthToken(res?.data?.refresh_token),
                   });
@@ -213,34 +217,33 @@ const Signup = ({navigation}) => {
         .catch(error => {
           const code = error?.response?.status;
           const message = error?.response?.data?.message;
-          errorHandler(code, message, 'signUpFailure');
-          setButtonLoader(false);
-          setOtpModalVisible(false);
+          setOtpError(message ?? 'something went wrong please try again later');
+          console.log(code, message);
+          setOtpButtonLoader(false);
+          // setOtpModalVisible(false);
         });
     }
   };
-
   return (
     <AvoidSoftInputView style={styles.parent} behavior="padding">
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.logoWrapper}>
-                  <Image
-                    source={IMAGES.logo} // add your Handova logo in assets
-                    style={styles.logo}
-                    resizeMode='stretch'
-                  />
-                </View>
-        <Text style={styles.title}>Signup/SignIn To Your Account</Text>
+          <Image
+            source={IMAGES.logo} // add your Handova logo in assets
+            style={styles.logo}
+            resizeMode="stretch"
+          />
+        </View>
+        <Text style={styles.title}>Signup Or SignIn To Your Account</Text>
         <Text style={[styles.subtitle]}>
-          You Have Been Missed , Sign/signup in to your account and continue exploring
-          the best fashion with us.
+          You Have Been Missed , Signin or signup in to your account and
+          continue exploring the best fashion with us.
         </Text>
-
-         
 
         <SignUpTab
           type={tab => {
             console.log('first', tab);
+            setMobile('');
             setSelectedTab(tab?.label);
           }}
         />
@@ -349,10 +352,16 @@ const Signup = ({navigation}) => {
               )}
             />
             {errors.terms && (
-              <Text style={{color: 'red'}}>{errors.terms.message}</Text>
+              <Text
+                style={{
+                  color: '#EC382A',
+                  fontSize: 12,
+                }}>
+                {errors.terms.message}
+              </Text>
             )}
             <CustomButton
-              title="Sign Up/Sing In"
+              title="Continue"
               onPress={handleSubmit(onSubmit)}
               loading={isDataSubmitting || buttonLoader}
             />
@@ -417,9 +426,17 @@ const Signup = ({navigation}) => {
               </Text>
             </View>
 
-            {termsErr && <Text style={{color: 'red'}}>{termsErr}</Text>}
+            {termsErr && (
+              <Text
+                style={{
+                  color: '#EC382A',
+                  fontSize: 12,
+                }}>
+                {termsErr}
+              </Text>
+            )}
             <CustomButton
-              title="Sign Up"
+              title="Continue"
               onPress={() => {
                 if (!termsCheck) {
                   setTermsErr('You must accept terms');
@@ -440,9 +457,10 @@ const Signup = ({navigation}) => {
                 color: theme?.text,
                 fontSize: fontSizes.sm,
                 fontFamily: fontFamily.poppins_regular,
+                textTransform: 'capitalize',
               },
             ]}>
-            Wanna continue as guest user ?
+            continue as guest user ?
           </Text>
           <TouchableOpacity
             onPress={() => navigation.navigate('MyTabs')}
@@ -456,7 +474,7 @@ const Signup = ({navigation}) => {
                   fontFamily: fontFamily.poppins_semiBold,
                 },
               ]}>
-              Homescreen
+              Continue
             </Text>
           </TouchableOpacity>
         </View>
@@ -466,13 +484,18 @@ const Signup = ({navigation}) => {
         onBackdropPress={() => {
           setOtpModalVisible(false);
         }}
+        onPressResend={() => {
+          setOtpModalVisible(false);
+        }}
+        isResend={selectedTab === 'Phone' ? 'mobile number' : 'email address'}
+        error={otpError}
         type={selectedTab}
         submit={otp => {
           selectedTab === 'Phone'
             ? handleMobileRegister(otp)
             : handleEmailValidate(otp);
         }}
-        loading={isDataSubmitting}
+        loading={otpButtonLoader}
       />
 
       {/* // terms and Conditions popup // */}
@@ -528,6 +551,7 @@ const createStyles = theme =>
       marginBottom: vs(20),
       fontFamily: fontFamily.poppins_regular,
       color: theme?.text,
+      textTransform: 'capitalize',
     },
     rowBetween: {
       flexDirection: 'row',

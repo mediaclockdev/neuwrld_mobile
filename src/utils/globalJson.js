@@ -312,3 +312,51 @@ export const subCategoriesData =
     }
   ]
 }
+export const Sort_By = [
+  {
+    id: 1,
+    key: 'TRENDING',
+    label: '🔥 Trending',
+  },
+  {
+    id: 2,
+    key: 'NEW_IN',
+    label: '🆕 New In',
+  },
+  {
+    id: 3,
+    key: 'BEST_SELLERS',
+    label: '⭐ Best Sellers',
+  },
+  {
+    id: 4,
+    key: 'MOST_WISHLISTED',
+    label: '❤️ Most Wishlisted',
+  },
+  {
+    id: 5,
+    key: 'BEST_DEALS',
+    label: '🏷️ Best Deals',
+  },
+  {
+    id: 6,
+    key: 'RATING',
+    label: '⭐ Customer Rating',
+  },
+  {
+    id: 7,
+    key: 'PRICE_LOW_HIGH',
+    label: '💰 Price: Low to High',
+  },
+  {
+    id: 8,
+    key: 'PRICE_HIGH_LOW',
+    label: '💰 Price: High to Low',
+  },
+  {
+    id: 9,
+    key: 'RECOMMENDED',
+    label: '🎯 Recommended for You',
+  },
+];
+

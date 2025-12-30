@@ -81,8 +81,8 @@ export default function Intro() {
         </Text>
 
         <Text style={styles.subtext}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-          eiusmod tempor incididunt
+          Discover styles tailored just for you. Explore trending outfits, get
+          inspired, and elevate your everyday look with ease.
         </Text>
 
         <TouchableOpacity

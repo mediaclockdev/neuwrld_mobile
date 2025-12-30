@@ -33,6 +33,15 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string/>
+	<key>NSCameraUsageDescription</key>
+<string>Camera access required</string>
+
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Photo access required</string>
+
+<key>NSMicrophoneUsageDescription</key>
+<string>Mic access required</string>
+
 	<key>UIAppFonts</key>
 	<array>
 		<string>Poppins-Black.ttf</string>

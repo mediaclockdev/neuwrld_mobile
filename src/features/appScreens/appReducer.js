@@ -20,9 +20,12 @@ const initialState = {
   addedToWishlist: {},
   wishlist_data: [],
   coupon_codes: [],
+  savedAddress: [],
   cartData: [],
   addedToCart: false,
+  removeProduct: false,
   appliedCoupon: {},
+  isSuccess: false,
 };
 
 const AppSlice = createSlice({
@@ -141,7 +144,6 @@ const AppSlice = createSlice({
       state.isLoading = false;
       let data = action.payload;
       state.products = data || [];
-      navigate('ProductList');
       state.error = null;
     },
 
@@ -151,9 +153,10 @@ const AppSlice = createSlice({
       state.error = action.payload || null;
     },
     getProductDetailsRequest(state, action) {
-      state.isLoading = true;
+      (state.addedToCart = false), (state.isLoading = true);
       state.profile_status = action.type;
       state.error = null;
+      state.isSuccess = false;
     },
 
     getProductDetailsSuccess(state, action) {
@@ -161,14 +164,16 @@ const AppSlice = createSlice({
       state.isLoading = false;
       let data = action.payload;
       state.productDetails = data || {};
-      navigate('ProductDetailsScreen');
       state.error = null;
+      state.isSuccess = true;
+      state.removeProduct = false
     },
 
     getProductDetailsFailure(state, action) {
       state.profile_status = action.type;
       state.isLoading = false;
       state.error = action.payload || null;
+      state.isSuccess = false;
     },
     addToWishlistRequest(state, action) {
       state.wishlist_load = true;
@@ -234,8 +239,14 @@ const AppSlice = createSlice({
       state.isLoading = false;
     },
     handleCartRemoveRequest(state, action) {
-      state.isLoading = true;
+      state.cart_load = true;
       state.error = null;
+    },
+    handleCartRemoveSuccess(state, action) {
+      state.cart_load = false;
+      state.error = null;
+      state.addedToCart = false;
+      state.removeProduct = true;
     },
 
     setAppliedCoupon(state, action) {
@@ -277,6 +288,25 @@ const AppSlice = createSlice({
     },
 
     getCouponFailure(state, action) {
+      state.profile_status = action.type;
+      state.isLoading = false;
+      state.error = action.payload || null;
+    },
+    getAddressRequest(state, action) {
+      state.isLoading = true;
+      state.profile_status = action.type;
+      state.error = null;
+    },
+
+    getAddressSuccess(state, action) {
+      state.profile_status = action.type;
+      state.isLoading = false;
+      let data = action.payload;
+      state.savedAddress = data || [];
+      state.error = null;
+    },
+
+    getAddressFailure(state, action) {
       state.profile_status = action.type;
       state.isLoading = false;
       state.error = action.payload || null;
@@ -329,10 +359,15 @@ export const {
   getCouponFailure,
 
   handleCartRemoveRequest,
+  handleCartRemoveSuccess,
 
   getWishlistRequest,
   getWishlistSuccess,
   getWishlistFailure,
+
+  getAddressRequest,
+  getAddressSuccess,
+  getAddressFailure,
 
   updateUserProfile,
 } = AppSlice.actions;

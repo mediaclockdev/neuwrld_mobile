@@ -20,7 +20,7 @@ import {vs, s, wp, rr, ms} from '../../../utils/responsive';
 import {useTheme} from '../../../context/ThemeContext';
 import {fontFamily, fontSizes} from '../../../theme/typography';
 import {usePopup} from '../../../context/PopupContext';
-import ReusableModal from '../../appScreens/components/ReusableModal';
+import ReusableModal from '../components/ReusableModal';
 import {loerms_ipsum} from '../../../utils/globalJson';
 import {useDispatch, useSelector} from 'react-redux';
 import Header from '../../../components/Header';

@@ -85,11 +85,19 @@ const createStyle = theme =>
       width: '50%',
       alignItems: 'center',
     },
-    headerText: {
-      fontSize: fontSizes.lg,
-      fontFamily: fontFamily.playfair_semiBold,
-      color: theme?.text,
+    // headerText: {
+    //   fontSize: fontSizes.lg,
+    //   fontFamily: fontFamily.playfair_semiBold,
+    //   color: theme?.text,
+    // },
+
+     headerText: {
+      fontSize: fontSizes.xl,
+      color: theme.primary_color,
+      fontFamily: fontFamily.playfair_medium,
+      letterSpacing: 0.5,
     },
+
     userName: {
       fontSize: fontSizes.lg,
       fontFamily: fontFamily.playfair_medium,
