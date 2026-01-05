@@ -152,6 +152,7 @@ function* getProductDetails(action) {
     );
     const data = response?.data?.data ?? response?.data ?? {};
     yield put(getProductDetailsSuccess(data));
+    navigate('ProductDetailsScreen');
   } catch (error) {
     errorHandler(error?.status || 500, error?.message);
     yield put(getProductFailure(error));
@@ -237,11 +238,11 @@ function* removeCartHandleSaga(action) {
     const response = yield call(
       postApi,
       ALL_APi_LIST.removeCart,
-      action.payload,
+      action.payload?.payload ?? action?.payload,
     );
     const data = response?.data?.data ?? response?.data ?? {};
-    yield call(cartGetHandleSaga);
     yield put(handleCartRemoveSuccess(data));
+    // yield call(cartGetHandleSaga);
   } catch (error) {
     const code = error?.response?.status;
     const message = error?.response?.data?.message;
@@ -394,6 +395,9 @@ function* getAddressSaga(action) {
     );
   }
 }
+
+
+
 
 // ✅ Watcher Saga
 function* appSaga() {

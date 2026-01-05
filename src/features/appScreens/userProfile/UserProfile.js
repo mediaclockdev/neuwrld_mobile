@@ -16,12 +16,13 @@ import {ICONS} from '../../../theme/colors';
 import {profilejson} from '../../../utils/globalJson';
 import {navigate} from '../../../utils/rootNavigation';
 import LogoutSheet from '../components/LogoutPop';
-import {setUser} from '../../../utils/authStorage';
+import {setToken, setUser} from '../../../utils/authStorage';
 import UploadMedia from '../components/UploadMedia';
 import {useDispatch, useSelector} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import {usePopup} from '../../../context/PopupContext';
 import {getAddressRequest} from '../appReducer';
+import {userLogout} from '../../auth/authReducer';
 
 const UserProfile = () => {
   const {theme} = useTheme();
@@ -111,10 +112,12 @@ const UserProfile = () => {
   };
 
   const confirmLogout = () => {
+    setToken(null);
+    dispatch(userLogout());
     setLogoutVisible(false);
     // Add your logout logic here
     setUser({userType: '', email: ''});
-    navigate('Login');
+    navigate('Signup');
   };
 
   const _renderItem = ({item, index}) => {

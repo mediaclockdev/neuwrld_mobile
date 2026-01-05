@@ -35,11 +35,11 @@ import {IMG_URL} from '../../../api/apiClient';
 import DashboardPlaceholder from '../Skeleton/DashboardPlaceholder';
 import AppImage from '../components/AppImage';
 import {optimizedImage} from '../../../utils/ImageUtils';
-import {
-  animateItemAppear,
-  animateItemPress,
-  animateScreenEnter,
-} from '../../../utils/animations';
+// import {
+//   animateItemAppear,
+//   animateItemPress,
+//   animateScreenEnter,
+// } from '../../../utils/animations';
 import {updateUserAuthTogle} from '../../auth/authReducer';
 import {usePopup} from '../../../context/PopupContext';
 const Dashboard = () => {
@@ -56,16 +56,16 @@ const Dashboard = () => {
   useFocusEffect(
     useCallback(() => {
       // Animate entire screen on mount
-      animateScreenEnter();
+      // animateScreenEnter();
       dispatch(getCustomerDashRequest());
     }, []),
   );
 
-  useEffect(() => {
-    if (isSuccess && productDetails) {
-      navigate('ProductDetailsScreen');
-    }
-  }, [isSuccess]);
+  // useEffect(() => {
+  //   if (isSuccess && productDetails) {
+  //     navigate('ProductDetailsScreen');
+  //   }
+  // }, [isSuccess]);
 
   const {showPopup} = usePopup();
   useEffect(() => {
@@ -74,9 +74,9 @@ const Dashboard = () => {
         type: 'warning',
         title: 'Hey There!',
         message:
-          'Please sing up to use this ammezing feature ,and experience the world of fashion   🎉',
+          'Please sing up to use this amazing feature ,and experience the world of fashion   🎉',
         confirmText: 'Sign up to explore',
-        cancelText: 'Cancle',
+        cancelText: 'cancel',
         showCancel: true,
         onConfirm: () => (navigate('Signup'), serIsAuthAction(false)),
         onCancel: () => serIsAuthAction(false),
@@ -110,20 +110,20 @@ const Dashboard = () => {
   };
 
   const ProductCard = ({item, index}) => {
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        animateItemAppear();
-      }, index * 50); // Stagger animation
+    // useEffect(() => {
+    //   const timer = setTimeout(() => {
+    //     animateItemAppear();
+    //   }, index * 50); // Stagger animation
 
-      return () => clearTimeout(timer);
-    }, [index]);
+    //   return () => clearTimeout(timer);
+    // }, [index]);
 
     return (
       <TouchableOpacity
         style={styles.card}
         activeOpacity={0.85}
         onPress={() => {
-          animateItemPress();
+          // animateItemPress();
           _handleProductClick(item);
         }}>
         {/* PRODUCT IMAGE */}

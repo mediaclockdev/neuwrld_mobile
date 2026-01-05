@@ -30,7 +30,7 @@ import {ToastService} from '../../../utils/toastService';
 import {IMAGES} from '../../../theme/colors';
 
 const Cart = () => {
-  const {customerDash, isLoading, savedAddress, appliedCoupon, cartData} =
+  const {customerDash, isLoading, removeProduct, appliedCoupon, cartData} =
     useSelector(state => state.App);
 
   const {isGuest} = useSelector(state => state.Auth);
@@ -85,9 +85,9 @@ const Cart = () => {
           type: 'warning',
           title: 'Hey There!',
           message:
-            'Please sing up to use this ammezing feature ,and experience the world of fashion   🎉',
+            'Please sing up to use this amazing feature ,and experience the world of fashion   🎉',
           confirmText: 'Sign up to explore',
-          cancelText: 'Cancle',
+          cancelText: 'cancel',
           showCancel: true,
           onConfirm: () => (navigate('Signup'), setShowPopupVisible(false)),
           onCancel: () => goBack(),
@@ -96,7 +96,7 @@ const Cart = () => {
         dispatch(getCartRequest(appliedCoupon?.code || ''));
         dispatch(getAddressRequest());
       }
-    }, [appliedCoupon]),
+    }, [appliedCoupon, removeProduct]),
   );
 
   useEffect(() => {

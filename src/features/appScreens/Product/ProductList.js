@@ -73,9 +73,9 @@ const ProductList = () => {
         type: 'warning',
         title: 'Hey There!',
         message:
-          'Please sing up to use this ammezing feature ,and experience the world of fashion   🎉',
+          'Please sing up to use this amazing feature ,and experience the world of fashion   🎉',
         confirmText: 'Sign up to explore',
-        cancelText: 'Cancle',
+        cancelText: 'cancel',
         showCancel: true,
         onConfirm: () => (navigate('Signup'), serIsAuthAction(false)),
         onCancel: () => serIsAuthAction(false),

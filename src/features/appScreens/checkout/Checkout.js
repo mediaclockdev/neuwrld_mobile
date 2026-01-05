@@ -114,19 +114,20 @@ const Checkout = ({route}) => {
                   </TouchableOpacity>
                 </>
               }
-              ListFooterComponent={ 
-                savedAddress?.addresses?.length &&
-                <>
-                  <TouchableOpacity
-                    onPress={() => {
-                      navigate('AddressScreen');
-                    }}
-                    style={styles.addNewBtn}>
-                    <Text style={styles.addNewText}>
-                      + Change Shipping Address
-                    </Text>
-                  </TouchableOpacity>
-                </>
+              ListFooterComponent={
+                savedAddress?.addresses?.length && (
+                  <>
+                    <TouchableOpacity
+                      onPress={() => {
+                        navigate('AddressScreen');
+                      }}
+                      style={styles.addNewBtn}>
+                      <Text style={styles.addNewText}>
+                        + Change Shipping Address
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )
               }
             />
           </View>
@@ -171,7 +172,8 @@ const Checkout = ({route}) => {
               <View style={styles.rowamount}>
                 <Text style={styles.lable}>Total amount</Text>
                 <Text style={styles.value}>
-                  {cartData?.cart_summary?.raw_subtotal}
+                  {/* {cartData?.cart_summary?.raw_subtotal} */}
+                  {Math.round(cartData?.cart_summary?.raw_subtotal)}
                 </Text>
               </View>
               <View style={styles.rowamount}>
@@ -311,7 +313,7 @@ const createStyles = theme =>
       justifyContent: 'space-between',
       paddingRight: ms(10),
     },
-     productImage: {
+    productImage: {
       width: ms(80),
       height: ms(90),
       resizeMode: 'stretch',

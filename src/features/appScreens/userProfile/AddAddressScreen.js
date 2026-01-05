@@ -34,7 +34,6 @@ const schema = Yup.object().shape({
     .matches(/^[0-9]{5,6}$/, 'Enter valid Zip/Postal code')
     .required('Zip/Postal code is required'),
 });
-
 export default function AddAddressScreen({navigation}) {
   const {savedAddress, userdetails} = useSelector(state => state.App);
 const dispatch = useDispatch()
@@ -127,6 +126,7 @@ const dispatch = useDispatch()
                 placeholder={placeholder}
                 style={styles.input}
                 maxLength={maxLength ?? 100}
+                placeholderTextColor={'#696969'}
                 numberOfLines={name === 'street' ? 3 : 1}
                 multiline={name === 'street' ? true : false}
                 value={value}
@@ -155,7 +155,7 @@ const dispatch = useDispatch()
         {renderInput('fullName', 'Full Name', 'default', 'input')}
         {renderInput('phone', 'Phone Number', 'phone-pad', 'input', 10)}
         {renderInput('street', 'Street Address', 'default', 'input')}
-        {renderInput('city', 'City', 'default', 'input')}
+      {renderInput('city', 'City', 'default', 'input')}
         {renderInput('state', 'State', 'default', 'dropdown')}
         {renderInput('zip', 'Zip / Postal Code', 'numeric', 'input', 6)}
       </ScrollView>
@@ -170,7 +170,6 @@ const dispatch = useDispatch()
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#fff'},
 

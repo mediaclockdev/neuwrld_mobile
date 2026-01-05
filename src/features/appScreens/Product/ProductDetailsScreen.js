@@ -8,7 +8,6 @@ import {
   StyleSheet,
   FlatList,
   useWindowDimensions,
-  LayoutAnimation,
 } from 'react-native';
 import {hp, ms, rr, s, vs} from '../../../utils/responsive';
 import ImageView from 'react-native-image-viewing';
@@ -135,16 +134,18 @@ const ProductDetailsScreen = ({route, navigation}) => {
         type: 'warning',
         title: 'Hey There!',
         message:
-          'Please sing up to use this ammezing feature ,and experience the world of fashion   🎉',
+          'Please sing up to use this amazing feature ,and experience the world of fashion 🎉',
         confirmText: 'Sign up to explore',
-        cancelText: 'Cancle',
+        cancelText: 'cancel',
         showCancel: true,
         onConfirm: () => (navigate('Signup'), serIsAuthAction(false)),
         onCancel: () => serIsAuthAction(false),
       });
     }
-    if (productDetails?.product?.cart_quantity) {
+    if (productDetails?.product?.cart_quantity > 0) {
       setQuantity(Number(productDetails?.product?.cart_quantity));
+    } else {
+      setQuantity(1);
     }
   }, [isAuthAction, productDetails]);
 
@@ -260,6 +261,7 @@ const ProductDetailsScreen = ({route, navigation}) => {
         quantity: quantity,
       };
       dispatch(handleCartRequest(payload));
+      setProductSKU(item?.product_sku);
     }
   };
 
@@ -276,6 +278,7 @@ const ProductDetailsScreen = ({route, navigation}) => {
       dispatch(getProductDetailsRequest(productSKU));
       setQuantity(0);
       scrollToTop();
+      console.log('productSKU', productSKU);
     }
   }, [removeProduct, addedToCart]);
 
@@ -297,7 +300,7 @@ const ProductDetailsScreen = ({route, navigation}) => {
         activeOpacity={0.85}
         onPress={() => {
           fetchProductDetails(item, '');
-          setProductSKU(item);
+          setProductSKU(item?.product_sku);
         }}>
         {/* PRODUCT IMAGE */}
         <View style={styles.imageBox}>
@@ -353,9 +356,6 @@ const ProductDetailsScreen = ({route, navigation}) => {
       <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
         <SubHeader
           onPressLeftIcon={() => {
-            LayoutAnimation.configureNext(
-              LayoutAnimation.Presets.easeInEaseOut,
-            );
             goBack();
           }}
           centerlabel={'Product Details'}
@@ -481,7 +481,8 @@ const ProductDetailsScreen = ({route, navigation}) => {
                       data?.is_current && styles.activeSize,
                     ]}
                     onPress={() => {
-                      fetchProductDetails('', data), setProductSKU(data);
+                      fetchProductDetails('', data),
+                        setProductSKU(data?.product_sku);
                     }}>
                     <Text
                       style={[
@@ -571,7 +572,8 @@ const ProductDetailsScreen = ({route, navigation}) => {
             }
             onPress={() => {
               addedToCart || productDetails?.product?.is_in_cart
-                ? navigation?.navigate('MyTabs', {screen: 'Cart'})
+                ? // ? navigate('Cart')
+                  navigation?.navigate('MyTabs', {screen: 'Cart'})
                 : _addToCart(productDetails?.product);
             }}
           />

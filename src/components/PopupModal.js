@@ -20,6 +20,7 @@ const PopupModal = ({
   title = '',
   message = '',
   onConfirm,
+  hidecancel,
   onCancel,
   confirmText = 'OK',
   cancelText = 'Cancel',

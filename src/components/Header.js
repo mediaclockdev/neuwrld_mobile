@@ -54,7 +54,7 @@ const createStyle = theme =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: s(8),
+      paddingVertical: s(10),
       paddingHorizontal: s(10),
       // backgroundColor: '#E5E5E5',
       // backgroundColor: '#2C2C2C',

@@ -52,7 +52,7 @@ const createStyle = theme =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingBottom: s(8),
+      paddingVertical: s(10),
       paddingHorizontal: s(10),
       backgroundColor: '#fff',
       borderBottomWidth: 0,

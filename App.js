@@ -19,7 +19,11 @@ import {
 import NetInfo from '@react-native-community/netinfo';
 import {getToken, getUser} from './src/utils/authStorage';
 import {navigate} from './src/utils/rootNavigation';
-import {getUserProfile} from './src/features/appScreens/appReducer';
+import {
+  getUserProfile,
+  hydrateWishlist,
+} from './src/features/appScreens/appReducer';
+import {loadWishlist} from './src/features/appScreens/wishlistStorage';
 
 const App = () => {
   const dispatch = useDispatch();
@@ -51,6 +55,14 @@ const App = () => {
       </SafeAreaProvider>
     );
   }
+
+  useEffect(() => {
+    const initWishlist = async () => {
+      const ids = await loadWishlist();
+      dispatch(hydrateWishlist(ids));
+    };
+    initWishlist();
+  }, []);
 
   const getAsyncItems = async () => {
     try {

@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import CustomTextInput from '../../../components/CustomTextInput';
 import CustomButton from '../../../components/CustomButton';
@@ -201,8 +202,9 @@ const Signup = ({navigation}) => {
                   showPopup({
                     type: 'success',
                     title: 'Done!',
+                    showCancel:'false',
                     message:
-                      'Successfully signup or signin , thank you for choosing us  🎉',
+                      "Welcome! you're all set to explore our collection  🎉",
                     confirmText: 'Continue to explore',
                     onConfirm: () => handleAuthToken(res?.data?.refresh_token),
                   });
@@ -225,7 +227,7 @@ const Signup = ({navigation}) => {
     }
   };
   return (
-    <AvoidSoftInputView style={styles.parent} behavior="padding">
+    <AvoidSoftInputView style={styles.parent} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}  >
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.logoWrapper}>
           <Image
@@ -234,10 +236,9 @@ const Signup = ({navigation}) => {
             resizeMode="stretch"
           />
         </View>
-        <Text style={styles.title}>Signup Or SignIn To Your Account</Text>
+        <Text style={styles.title}>Login/Signup to your Account</Text>
         <Text style={[styles.subtitle]}>
-          You Have Been Missed , Signin or signup in to your account and
-          continue exploring the best fashion with us.
+          Access your account to experience fashion, thoughtfully curated for you.
         </Text>
 
         <SignUpTab
@@ -338,7 +339,7 @@ const Signup = ({navigation}) => {
                     )}
                   </View>
                   <Text style={styles.terms}>
-                    I accept the
+                    I agree to the
                     <Text
                       onPress={() => {
                         setShowTermsModal(true);
@@ -414,7 +415,7 @@ const Signup = ({navigation}) => {
                 )}
               </TouchableOpacity>
               <Text style={styles.terms}>
-                I accept the
+                I agree to the
                 <Text
                   onPress={() => {
                     setShowTermsModal(true);
@@ -449,36 +450,9 @@ const Signup = ({navigation}) => {
           </View>
         )}
 
-        <View style={styles.rowfooter}>
-          <Text
-            style={[
-              styles.subtitle,
-              {
-                color: theme?.text,
-                fontSize: fontSizes.sm,
-                fontFamily: fontFamily.poppins_regular,
-                textTransform: 'capitalize',
-              },
-            ]}>
-            continue as guest user ?
-          </Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('MyTabs')}
-            activeOpacity={0.7}>
-            <Text
-              style={[
-                styles.subtitle,
-                {
-                  color: theme?.text,
-                  fontSize: fontSizes.sm,
-                  fontFamily: fontFamily.poppins_semiBold,
-                },
-              ]}>
-              Continue
-            </Text>
-          </TouchableOpacity>
-        </View>
+       
       </ScrollView>
+
       <OtpInputPopUp
         isOtpModalVisible={isOtpModalVisible}
         onBackdropPress={() => {
@@ -509,6 +483,25 @@ const Signup = ({navigation}) => {
           </View>
         }
       />
+
+       <View style={styles.rowfooter}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('MyTabs')}
+            activeOpacity={0.7}>
+            <Text
+              style={[
+                styles.subtitle,
+                {
+                  color: theme?.text,
+                  fontSize: fontSizes.sm,
+                  fontFamily: fontFamily.poppins_regular,
+                  textTransform: 'capitalize',
+                },
+              ]}>
+              Explore as guest user
+            </Text>
+          </TouchableOpacity>
+        </View>
     </AvoidSoftInputView>
   );
 };

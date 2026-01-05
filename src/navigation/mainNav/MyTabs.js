@@ -32,7 +32,7 @@ export default function MyTabs() {
 
   const CustomTabBar = ({state, descriptors, navigation}) => {
     const [activeTab, setActiveTab] = useState(state.routes[state.index].name);
-
+console.log("activeTab",activeTab)
     useEffect(() => {
       // Center pill under active tab
       const targetX = state.index * TAB_WIDTH + TAB_WIDTH / 2 - PILL_SIZE / 2;
@@ -84,6 +84,7 @@ export default function MyTabs() {
         {state.routes.map((route, index) => {
           const {options} = descriptors[route.key];
           const focused = state.index === index;
+          console.log("route name ----",route.name)
           let iconName;
           if (route.name === 'Home') iconName = ICONS.home;
           else if (route.name === 'Wishlist') iconName = ICONS.wishlistList;
