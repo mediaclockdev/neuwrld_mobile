@@ -1,81 +1,57 @@
 import React, {useState} from 'react';
 import {View, Text, FlatList, SafeAreaView, StyleSheet} from 'react-native';
 import TabSwitcher from '../components/TabSwitcher';
-import OrderCard from '../components/OrderCard';
+import OrderCard from './OrderCard';
 import SubHeader from '../components/SubHeader';
-import {goBack} from '../../../utils/rootNavigation';
+import {goBack, navigate} from '../../../utils/rootNavigation';
 import {useTheme} from '../../../context/ThemeContext';
 import {ms, vs} from '../../../utils/responsive';
-
-const dummyOrders = {
-  Active: [
-    {
-      id: '1',
-      title: 'Brown Jacket',
-      size: 'XL',
-      qty: 10,
-      price: 83.97,
-      image: 'https://picsum.photos/200/300?random=1',
-    },
-    {
-      id: '2',
-      title: 'Brown Suite',
-      size: 'L',
-      qty: 5,
-      price: 120,
-      image: 'https://picsum.photos/200/300?random=2',
-    },
-  ],
-  Completed: [
-    {
-      id: '3',
-      title: 'Denim Jacket',
-      size: 'M',
-      qty: 1,
-      price: 99.99,
-      image: 'https://picsum.photos/200/300?random=3',
-    },
-  ],
-  Cancelled: [
-    {
-      id: '4',
-      title: 'Leather Coat',
-      size: 'XL',
-      qty: 2,
-      price: 150,
-      image: 'https://picsum.photos/200/300?random=4',
-    },
-  ],
-};
+import {useSelector} from 'react-redux';
 
 const MyOrdersScreen = () => {
+  const {customerDash, isLoading, allOrders, appliedCoupon, cartData} =
+    useSelector(state => state.App);
+
   const [activeTab, setActiveTab] = useState('Active');
   const {theme} = useTheme();
   const styles = createStyles(theme);
   const handleTrackOrder = order => {
     console.log('Track order:', order);
     // navigate to tracking screen
+    navigate('OrderDetailsScreen', {
+      order: order,
+    });
   };
+
+  console.log('allOrders', allOrders);
 
   return (
     <SafeAreaView style={styles.parent}>
       <SubHeader onPressLeftIcon={() => goBack()} centerlabel={'My Orders'} />
       <View style={styles.container}>
-        <TabSwitcher
+        {/* <TabSwitcher
           tabs={['Active', 'Completed', 'Cancelled']}
           activeTab={activeTab}
           onTabChange={setActiveTab}
           theme={theme}
-        />
+        /> */}
 
         <FlatList
-          data={dummyOrders[activeTab]}
-          
-          keyExtractor={item => item.id}
+          data={allOrders}
           renderItem={({item}) => (
-            <OrderCard theme={theme} order={item} onTrack={handleTrackOrder} />
+            <OrderCard
+              theme={theme}
+              order={item}
+              onPress={() => {
+                handleTrackOrder(item);
+              }}
+            />
           )}
-          contentContainerStyle={{alignItems:'center',marginVertical:vs(10)}}
+          keyExtractor={item => item.id}
+          removeClippedSubviews
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={7}
         />
       </View>
     </SafeAreaView>
@@ -94,3 +70,60 @@ const createStyles = theme =>
       paddingHorizontal: ms(15),
     },
   });
+
+// import React, {useState} from 'react';
+// import {View, Text, FlatList, SafeAreaView, StyleSheet} from 'react-native';
+// import TabSwitcher from '../components/TabSwitcher';
+// import OrderCard from './OrderCard';
+// import SubHeader from '../components/SubHeader';
+// import {goBack} from '../../../utils/rootNavigation';
+// import {useTheme} from '../../../context/ThemeContext';
+// import {ms, vs} from '../../../utils/responsive';
+// import {useSelector} from 'react-redux';
+
+// export const OrdersScreen = ({navigation, orders}) => {
+//   const {customerDash, isLoading, allOrders, appliedCoupon, cartData} =
+//     useSelector(state => state.App);
+
+//   const [activeTab, setActiveTab] = useState('Active');
+//   const {theme} = useTheme();
+//   const styles = createStyles(theme);
+//   const handleTrackOrder = order => {
+//     console.log('Track order:', order);
+//     // navigate to tracking screen
+//   };
+
+//   const renderItem = ({item}) => (
+//     <OrderCard
+//       order={item}
+//       onPress={() => navigation.navigate('OrderDetails', {order: item})}
+//     />
+//   );
+
+//   return (
+//     <View style={styles.container}>
+//       <FlatList
+//         data={allOrders}
+//         keyExtractor={item => item.id}
+//         renderItem={renderItem}
+//         contentContainerStyle={{padding: 16}}
+//         showsVerticalScrollIndicator={false}
+//         removeClippedSubviews
+//         initialNumToRender={6}
+//         maxToRenderPerBatch={6}
+//         windowSize={7}
+//       />
+//     </View>
+//   );
+// };
+
+// const createStyles = theme =>
+//   StyleSheet.create({
+//     parent: {
+//       flex: 1,
+//       backgroundColor: theme?.background,
+//     },
+//     container: {
+//       paddingHorizontal: ms(15),
+//     },
+//   });

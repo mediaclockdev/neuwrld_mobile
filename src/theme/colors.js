@@ -46,6 +46,8 @@ export const ICONS = {
   profile_info: require('../../assets/icons/profile_info.png'),
   space: require('../../assets/icons/space.png'),
   adedWishlist: require('../../assets/icons/add_to_favorites.png'),
+  gender:require('../../assets/icons/gender.png'),
+  phone:require('../../assets/icons/telephone.png'),
 
   // bottom tabs
   home: require('../../assets/icons/House.png'),
@@ -57,6 +59,7 @@ export const ICONS = {
   location: require('../../assets/icons/location.png'),
   emptyStar: require('../../assets/icons/emptyStar.png'),
   star: require('../../assets/icons/star.png'),
+  down_arrow: require('../../assets/icons/down-arrow.png'),
 };
 
 export const IMAGES = {

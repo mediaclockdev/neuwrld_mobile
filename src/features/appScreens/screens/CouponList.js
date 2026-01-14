@@ -188,8 +188,6 @@
 //     },
 //   });
 
-
-
 import React from 'react';
 import {
   View,
@@ -200,22 +198,44 @@ import {
   ActivityIndicator,
   Clipboard,
 } from 'react-native';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import SubHeader from '../components/SubHeader';
 import {goBack} from '../../../utils/rootNavigation';
 import {useTheme} from '../../../context/ThemeContext';
-import { fontFamily } from '../../../theme/typography';
+import {fontFamily} from '../../../theme/typography';
+import {getCartRequest, setAppliedCoupon} from '../appReducer';
+import { ms } from '../../../utils/responsive';
+import { postApi } from '../../../api/requestApi';
+import { parsePriceToNumber } from '../../../utils/StringToBNum';
+import { ToastService } from '../../../utils/toastService';
 
 const CouponList = () => {
-  const {coupon_codes, isLoading} = useSelector(state => state.App);
+  const {coupon_codes, isLoading, cartData} = useSelector(state => state.App);
   const {theme} = useTheme();
   const styles = createStyles(theme);
+  const dispatch = useDispatch();
 
-  const copyCode = code => {
-    Clipboard.setString(code);
-  };
+  const _applyCoupon = item => {
+      const rawAmount = parsePriceToNumber(cartData?.cart_summary?.final_amount);
+      postApi('coupon/apply', {
+        coupon_code: item?.code,
+        order_amount: rawAmount,
+      }).then(res => {
+        dispatch(setAppliedCoupon(res?.data));
+        console.log('res coupon ', res?.data);
+        if (res?.data?.discount) {
+          dispatch(getCartRequest(item?.code));
+          ToastService.success(
+            'Coupon Applied 🎉',
+            'Discount has been successfully added to your cart.',
+          );
+        }
+      });
+    };
 
   const renderItem = ({item}) => {
+    const expired = !item?.is_active;
+    const is_coupon_applied = item?.id == cartData?.coupon?.coupon_id;
     return (
       <View style={styles.card}>
         {/* Ticket cuts */}
@@ -248,9 +268,22 @@ const CouponList = () => {
         {/* Copy */}
         <TouchableOpacity
           activeOpacity={0.7}
-          style={styles.copyBtn}
-          onPress={() => copyCode(item.code)}>
-          <Text style={styles.copyText}>COPY CODE</Text>
+          disabled={expired}
+          style={[
+            styles.copyBtn,
+            expired && styles.disabledBtn,
+            is_coupon_applied && styles.appliedBtn,
+          ]}
+          onPress={() => _applyCoupon(item)}>
+          {isLoading ? (
+            <ActivityIndicator color={theme?.primary_color} size={'small'} />
+          ) : (
+            <Text style={[styles.copyText,{
+              color: is_coupon_applied ? '#fff' : '#696969'
+            }]}>
+              {expired ? 'Expired' : is_coupon_applied ? 'Applied' : 'Apply'}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     );
@@ -258,11 +291,7 @@ const CouponList = () => {
 
   return (
     <View style={styles.container}>
-      <SubHeader
-        centerlabel="Coupon"
-        hideRigthIcon
-        onPressLeftIcon={goBack}
-      />
+      <SubHeader centerlabel="Coupon" hideRigthIcon onPressLeftIcon={goBack} />
 
       <Text style={styles.sectionTitle}>Best offers for you</Text>
 
@@ -298,13 +327,12 @@ const createStyles = theme =>
     sectionTitle: {
       fontSize: 16,
       fontWeight: '600',
-                fontFamily: fontFamily.playfair_medium,
+      fontFamily: fontFamily.playfair_medium,
 
       marginHorizontal: 16,
       marginTop: 10,
       color: '#111',
     },
-
 
     card: {
       backgroundColor: '#fff',
@@ -384,7 +412,7 @@ const createStyles = theme =>
     },
 
     copyText: {
-      fontSize: 14,
+      fontSize: ms(12),
       fontWeight: '700',
       letterSpacing: 1,
       color: '#000',
@@ -395,5 +423,12 @@ const createStyles = theme =>
       marginTop: 40,
       color: '#777',
     },
-  });
+    disabledBtn: {
+      backgroundColor: '#888',
+    },
+    appliedBtn: {
+      backgroundColor: theme?.primary_color,
+    },
 
+
+  });

@@ -360,3 +360,31 @@ export const Sort_By = [
   },
 ];
 
+export const COUNTRIES = [
+  {
+    code: 'AU',
+    name: 'Australia',
+    dialCode: '+61',
+    flag: '🇦🇺',
+    minLength: 9,
+    maxLength: 9,
+    regex: /^\+614\d{8}$/,
+    error: 'Enter a valid Australian mobile number',
+  },
+  {
+    code: 'IN',
+    name: 'India',
+    dialCode: '+91',
+    flag: '🇮🇳',
+    minLength: 10,
+    maxLength: 10,
+    regex: /^\+91[6-9]\d{9}$/,
+    error: 'Enter a valid Indian mobile number',
+  },
+];
+
+
+
+
+
+

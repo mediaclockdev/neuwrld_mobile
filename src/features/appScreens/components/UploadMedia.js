@@ -48,7 +48,7 @@ console.log("visible",visible)
           path: image.assets[0].uri,
           type: image.assets[0].type,
           name: image.assets[0].fileName,
-          base64: image.assets[0].base64,
+          // base64: image.assets[0].base64,
         };
         setImageSource(imageData);
       })
@@ -71,7 +71,7 @@ console.log("visible",visible)
           path: image.assets[0].uri,
           type: image.assets[0].type,
           name: image.assets[0].fileName,
-          base64: image?.assets[0]?.base64,
+          // base64: image?.assets[0]?.base64,
         };
         setImageSource(imageData);
       })

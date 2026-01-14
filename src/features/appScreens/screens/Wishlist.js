@@ -8,6 +8,7 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import {useTheme} from '../../../context/ThemeContext';
 import {hp, ms, rr, s, vs, wp} from '../../../utils/responsive';
@@ -17,6 +18,8 @@ import {
   addToWishlistRequest,
   getProductDetailsRequest,
   getWishlistRequest,
+  rempoveFromWishlistRequest,
+  setWishlistOverride,
 } from '../appReducer';
 import {useFocusEffect} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
@@ -28,12 +31,14 @@ import AppImage from '../components/AppImage';
 import CustomButton from '../../../components/CustomButton';
 
 const Wishlist = () => {
-  const {customerDash, isLoading, wishlist_data} = useSelector(
+  const {customerDash, isLoading, wishlist_load, wishlist_data} = useSelector(
     state => state.App,
   );
   const {isGuest} = useSelector(state => state.Auth);
   const [showPopupVisible, setShowPopupVisible] = useState(true);
   const {theme} = useTheme();
+  const [current_id, setCurrent_id] = useState(null);
+
   const styles = createStyles(theme);
   const dispatch = useDispatch();
   const {showPopup} = usePopup();
@@ -66,65 +71,79 @@ const Wishlist = () => {
       serIsAuthAction(true);
       return;
     } else {
-      let screen = 'dashboard';
-      let payload = {
-        product_variant_id: item?.id,
-        is_saved_for_later: 1,
+      const payload = {
+        product_variant_id: item.product_variant_id,
+        action: 'remove',
         quantity: 1,
       };
-      dispatch(addToWishlistRequest({payload, screen}));
+
+      dispatch(addToWishlistRequest({payload}));
     }
   };
-  const renderProduct = ({item}) => (
-    <TouchableOpacity
-      style={styles.card}
-      activeOpacity={0.85}
-      onPress={() => {
-        _handleProductClick(item);
-      }}>
-      {/* PRODUCT IMAGE */}
-      <View style={styles.imageBox}>
-        <TouchableOpacity
-          onPress={() => {
-            handleWishlist(item);
-          }}
-          style={styles.heart}>
-          <Image source={ICONS.adedWishlist} style={styles.wishlistListIcon} />
-        </TouchableOpacity>
-        <AppImage
-          uri={item?.image}
-          autoHeight={false}
-          resizeMode="cover"
-          style={styles.productImage}
-          borderRadius={16}
-        />
-      </View>
+  const renderProduct = ({item}) => {
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        activeOpacity={0.85}
+        onPress={() => {
+          _handleProductClick(item);
+        }}>
+        {/* PRODUCT IMAGE */}
+        <View style={styles.imageBox}>
+          <TouchableOpacity
+            onPress={() => {
+              setCurrent_id(item?.id);
 
-      {/* TITLE */}
-      <Text numberOfLines={1} style={styles.name}>
-        {item?.name}
-      </Text>
+              handleWishlist(item);
+            }}
+            style={styles.heart}>
+            <Image
+              source={ICONS.adedWishlist}
+              style={styles.wishlistListIcon}
+            />
+          </TouchableOpacity>
 
-      {/* PRICE ROW */}
-      <View style={styles.priceRow}>
-        <View>
-          <Text style={[styles.old_price]}>{item?.old_price}</Text>
-          <Text style={styles.price}>{item?.price}</Text>
+          {wishlist_load && current_id == item?.id && (
+            <View style={styles.overlayCart}>
+              <ActivityIndicator size="small" color="#fff" />
+            </View>
+          )}
+
+          <AppImage
+            uri={item?.image}
+            autoHeight={false}
+            resizeMode="cover"
+            style={styles.productImage}
+            borderRadius={16}
+          />
         </View>
-        <Text style={styles.discountTag}>-{item?.discount}</Text>
-      </View>
 
-      {/* WISHLIST + RATING */}
-      <View style={styles.bottomRow}>
-        {item?.avg_rating && (
-          <View style={styles.ratingBox}>
-            <Text style={styles.rate}>⭐ </Text>
-            <Text style={styles.ratingText}>{item?.avg_rating}</Text>
+        {/* TITLE */}
+        <Text numberOfLines={1} style={styles.name}>
+          {item?.product_name}
+        </Text>
+
+        {/* PRICE ROW */}
+        <View style={styles.priceRow}>
+          <View>
+            <Text style={[styles.old_price]}>{item?.old_price}</Text>
+            <Text style={styles.price}>{item?.price}</Text>
           </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
+          <Text style={styles.discountTag}>-{item?.discount}</Text>
+        </View>
+
+        {/* WISHLIST + RATING */}
+        <View style={styles.bottomRow}>
+          {item?.avg_rating && (
+            <View style={styles.ratingBox}>
+              <Text style={styles.rate}>⭐ </Text>
+              <Text style={styles.ratingText}>{item?.avg_rating}</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   if (isLoading) {
     return <DashboardPlaceholder />;
@@ -132,11 +151,13 @@ const Wishlist = () => {
     return (
       <View style={styles.container}>
         <Text style={styles.headerText}>💖 Faves</Text>
-        <Text style={styles.SubheaderText}>The stuff you’re loving right now ✨</Text>
+        <Text style={styles.SubheaderText}>
+          The stuff you’re loving right now ✨
+        </Text>
 
         {/* Product Grid */}
         <FlatList
-          data={wishlist_data?.saved_for_later_items}
+          data={wishlist_data?.saved_for_later_items ?? wishlist_data}
           keyExtractor={item => item.id}
           renderItem={renderProduct}
           numColumns={2}
@@ -144,37 +165,37 @@ const Wishlist = () => {
           showsVerticalScrollIndicator={false}
           ListFooterComponent={<View style={{height: hp(5)}} />}
           contentContainerStyle={{paddingBottom: 20}}
-         ListEmptyComponent={() => {
-              return (
-                <View
+          ListEmptyComponent={() => {
+            return (
+              <View
+                style={{
+                  width: wp(90),
+                  height: hp(70),
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                <Image
                   style={{
-                    width: wp(90),
-                    height: hp(70),
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}>
-                  <Image
-                    style={{
-                      width: ms(200),
-                      height: ms(200),
-                      resizeMode: 'contain',
-                    }}
-                    source={IMAGES.noData}
-                  />
-                  <Text style={styles.emptyText}>
-                    Oops! Nothing here yet 👀{'\n'}Let’s find something you’ll
-                    love.
-                  </Text>
-                  <CustomButton
-                    onPress={() => {
-                      navigate('Home');
-                    }}
-                    btnStyle={{width: ms(140)}}
-                    title={'Explore Trends'}
-                  />
-                </View>
-              );
-            }}
+                    width: ms(200),
+                    height: ms(200),
+                    resizeMode: 'contain',
+                  }}
+                  source={IMAGES.noData}
+                />
+                <Text style={styles.emptyText}>
+                  Oops! Nothing here yet 👀{'\n'}Let’s find something you’ll
+                  love.
+                </Text>
+                <CustomButton
+                  onPress={() => {
+                    navigate('Home');
+                  }}
+                  btnStyle={{width: ms(140)}}
+                  title={'Explore Trends'}
+                />
+              </View>
+            );
+          }}
         />
       </View>
     );
@@ -191,7 +212,7 @@ const createStyles = theme =>
       paddingHorizontal: ms(10),
     },
     container: {flex: 1, backgroundColor: '#fff', padding: 16},
-   
+
     headerText: {
       fontSize: fontSizes.xl,
       color: theme.primary_color,
@@ -201,7 +222,7 @@ const createStyles = theme =>
     SubheaderText: {
       fontSize: fontSizes.base,
       color: theme.gray,
-      lineHeight:ms(25),
+      lineHeight: ms(25),
       fontFamily: fontFamily.playfair_italic,
       marginBottom: vs(20),
       letterSpacing: 0.5,
@@ -341,4 +362,16 @@ const createStyles = theme =>
     },
     price: {fontSize: 14, fontWeight: '600', color: '#333'},
     rating: {fontSize: 12, color: '#888'},
+    overlayCart: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: 16,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: +100000,
+    },
   });

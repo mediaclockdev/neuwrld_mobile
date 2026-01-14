@@ -5,6 +5,7 @@ import Appnavigator from './src/navigation/Appnavigator';
 import {ThemeProvider, useTheme} from './src/context/ThemeContext';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message'; // optional, if you use it
+import { StripeProvider } from '@stripe/stripe-react-native';
 
 import {PopupProvider, usePopup} from './src/context/PopupContext';
 import {getItem, setItem, storage} from './src/utils/storage';
@@ -24,6 +25,7 @@ import {
   hydrateWishlist,
 } from './src/features/appScreens/appReducer';
 import {loadWishlist} from './src/features/appScreens/wishlistStorage';
+import { stripClient } from './keys';
 
 const App = () => {
   const dispatch = useDispatch();
@@ -48,7 +50,8 @@ const App = () => {
           // style={{flex: 1, backgroundColor: '#E5E5E5'}} // murcury
           // style={{flex: 1, backgroundColor: '#2C2C2C'}} // charcole
           style={{flex: 1, backgroundColor: theme.background}}
-          edges={['top', 'left', 'right', 'bottom']} // respect all safe areas
+          // edges={['top', 'left', 'right', 'bottom']}
+           // respect all safe areas
         >
           <Appnavigator />
         </SafeAreaView>
@@ -108,7 +111,11 @@ const App = () => {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{flex: 1}}>
+    <StripeProvider
+      publishableKey={stripClient}
+      urlScheme="neuwrld"
+    >
+ <GestureHandlerRootView style={{flex: 1}}>
       <ThemeProvider>
         <PopupProvider>
           <ThemedApp />
@@ -116,6 +123,8 @@ const App = () => {
         </PopupProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
+    </StripeProvider>
+   
   );
 };
 

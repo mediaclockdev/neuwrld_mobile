@@ -24,6 +24,7 @@ import Signup from '../../features/auth/screens/Signup';
 import CouponList from '../../features/appScreens/screens/CouponList';
 import PrivacyPolicy from '../../features/appScreens/userProfile/PrivacyPolicy';
 import HelpCenter from '../../features/appScreens/userProfile/HelpCenter';
+import { OrderDetailsScreen } from '../../features/appScreens/Orders/OrderDetailsScreen';
 const Stack = createStackNavigator();
 
 export default function MainStack() {
@@ -162,6 +163,11 @@ export default function MainStack() {
         name="HelpCenter"
         options={{headerShown: false}}
         component={HelpCenter}
+      />
+      <Stack.Screen
+        name="OrderDetailsScreen"
+        options={{headerShown: false}}
+        component={OrderDetailsScreen}
       />
 
     </Stack.Navigator>

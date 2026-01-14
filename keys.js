@@ -1,0 +1,1 @@
+export const stripClient = "pk_test_51RjaO64IdgNOYm4BrVkVyEsmWCBU5DIPAMBhBgJ2R0yYhJQLdPOqwP4cilDRBHXyN39GJvO0iQTjyJqQ4GnSWbMI00i8WPbEgb"

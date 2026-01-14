@@ -30,6 +30,7 @@ import {
   getCustomerDashRequest,
   getProductDetailsRequest,
   getProductRequest,
+  setWishlistOverride,
 } from '../appReducer';
 import {IMG_URL} from '../../../api/apiClient';
 import DashboardPlaceholder from '../Skeleton/DashboardPlaceholder';
@@ -46,26 +47,17 @@ const Dashboard = () => {
   const {theme} = useTheme();
   const styles = createStyles(theme);
 
-  const {customerDash, isSuccess, isLoading, productDetails} = useSelector(
-    state => state.App,
-  );
+  const {customerDash, wishlistOverride, isLoading, productDetails} =
+    useSelector(state => state.App);
   const dispatch = useDispatch();
   const {isGuest} = useSelector(state => state.Auth);
   const [isAuthAction, serIsAuthAction] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      // Animate entire screen on mount
-      // animateScreenEnter();
       dispatch(getCustomerDashRequest());
     }, []),
   );
-
-  // useEffect(() => {
-  //   if (isSuccess && productDetails) {
-  //     navigate('ProductDetailsScreen');
-  //   }
-  // }, [isSuccess]);
 
   const {showPopup} = usePopup();
   useEffect(() => {
@@ -99,17 +91,29 @@ const Dashboard = () => {
       serIsAuthAction(true);
       return;
     } else {
-      let screen = 'dashboard';
-      let payload = {
-        product_variant_id: item?.id,
-        is_saved_for_later: 1,
+      const isWishlisted = !(wishlistOverride[item.id] ?? item.is_in_wishlist);
+    
+      // 🔥 Instant UI update
+      dispatch(
+        setWishlistOverride({
+          productId: item.id,
+          isWishlisted,
+        }),
+      );
+
+      const payload = {
+        product_variant_id: item.id,
+        action: isWishlisted ? 'add' : 'remove',
         quantity: 1,
       };
-      dispatch(addToWishlistRequest({payload, screen}));
+
+      dispatch(addToWishlistRequest({payload, screen: 'dashboard'}));
     }
   };
 
   const ProductCard = ({item, index}) => {
+    const isWishlisted = wishlistOverride[item.id] ?? item.is_in_wishlist;
+
     // useEffect(() => {
     //   const timer = setTimeout(() => {
     //     animateItemAppear();
@@ -135,7 +139,8 @@ const Dashboard = () => {
             style={styles.heart}>
             <Image
               source={
-                item?.is_in_wishlist ? ICONS.adedWishlist : ICONS.wishlistList
+                isWishlisted ? ICONS.adedWishlist : ICONS.wishlistList
+                // item?.is_in_wishlist ? ICONS.adedWishlist : ICONS.wishlistList
               }
               style={styles.wishlistListIcon}
             />
@@ -271,7 +276,7 @@ const Dashboard = () => {
                   marginVertical: ms(10),
                 },
               ]}>
-              <Text style={styles.headerText}>Recommended Propduct</Text>
+              <Text style={styles.headerText}>Recommended Product</Text>
             </View>
           }
           showsVerticalScrollIndicator={false}

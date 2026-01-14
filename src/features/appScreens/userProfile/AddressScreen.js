@@ -20,29 +20,6 @@ import {postApi} from '../../../api/requestApi';
 import {ToastService} from '../../../utils/toastService';
 import {getAddressRequest} from '../appReducer';
 
-const addresses = [
-  {
-    id: '1',
-    label: 'Home',
-    address: '1901 Thornridge Cir. Shiloh, Hawaii 81063',
-  },
-  {
-    id: '2',
-    label: 'Office',
-    address: '4517 Washington Ave. Manchester, Kentucky 39495',
-  },
-  {
-    id: '3',
-    label: 'Parent’s House',
-    address: '8502 Preston Rd. Inglewood, Maine 98380',
-  },
-  {
-    id: '4',
-    label: 'Friend’s House',
-    address: '2464 Royal Ln. Mesa, New Jersey 45463',
-  },
-];
-
 export default function AddressScreen() {
   const {theme} = useTheme();
   const styles = createStyles(theme);
@@ -56,10 +33,10 @@ export default function AddressScreen() {
   } = useSelector(state => state.App);
   const [loading, setLoading] = useState(false);
 
-  const [selectedId, setSelectedId] = useState('');
+  // const [selectedId, setSelectedId] = useState('');
   const dispatch = useDispatch();
 
-  const onSubmit = () => {
+  const onSubmit = selectedId => {
     setLoading(true);
     let payload = {
       id: selectedId?.id,
@@ -92,17 +69,17 @@ export default function AddressScreen() {
   };
 
   const renderItem = ({item}) => {
-    const isSelected = item.id === selectedId?.id || item?.primary;
+    const isSelected = item?.primary;
 
     return (
       <TouchableOpacity
         style={styles.addressRow}
-        onPress={() => setSelectedId(item)}
+        onPress={() => onSubmit(item)}
         activeOpacity={0.8}>
         <View style={styles.addressLeft}>
-          <Text style={styles.addressLabel}>{item.name}</Text>
+          <Text style={styles.addressLabel}>{item?.name}</Text>
           <Text style={styles.addressText}>
-            {item?.city_name} , {item?.state_name} , {item.country_name}
+            {item?.city_name} , {item?.state_name} , {item?.country_name}
           </Text>
           <Text style={styles.addressText}>
             {item?.address_line_1} , {item.pincode}
@@ -138,21 +115,25 @@ export default function AddressScreen() {
                 navigate('AddAddressScreen');
               }}
               style={styles.addNewBtn}>
-              <Text style={styles.addNewText}>+ Add New Shipping Address</Text>
+              <Text style={styles.addNewText}>
+                {loading
+                  ? 'Updating Your Adderess ...'
+                  : '+Add New Shipping Address'}
+              </Text>
             </TouchableOpacity>
           </>
         }
       />
 
       {/* Bottom Fixed Button */}
-      <View style={styles.bottomBar}>
+      {/* <View style={styles.bottomBar}>
         <CustomButton
           onPress={() => onSubmit()}
           title={'Apply & Continue'}
           loading={loading}
           btnStyle={styles.checkoutBtn}
         />
-      </View>
+      </View> */}
     </View>
   );
 }
@@ -218,7 +199,7 @@ const createStyles = theme =>
       borderColor: '#6B4226',
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom:100
+      marginBottom: 100,
     },
 
     addNewText: {

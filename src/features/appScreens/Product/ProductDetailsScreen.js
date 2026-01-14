@@ -8,6 +8,7 @@ import {
   StyleSheet,
   FlatList,
   useWindowDimensions,
+  ActivityIndicator,
 } from 'react-native';
 import {hp, ms, rr, s, vs} from '../../../utils/responsive';
 import ImageView from 'react-native-image-viewing';
@@ -22,6 +23,7 @@ import {
   getProductDetailsRequest,
   handleCartRemoveRequest,
   handleCartRequest,
+  setWishlistOverride,
 } from '../appReducer';
 import RenderHtml from 'react-native-render-html';
 import AppImage from '../components/AppImage';
@@ -37,13 +39,19 @@ const ProductDetailsScreen = ({route, navigation}) => {
 
   const {theme} = useTheme();
   const styles = createStyles(theme);
-  const {removeProduct, addedToCart, cart_load, productDetails} = useSelector(
-    state => state.App,
-  );
+  const {
+    removeProduct,
+    addedToCart,
+    cart_load,
+    wishlistOverride,
+    wishlist_load,
+    productDetails,
+  } = useSelector(state => state.App);
   const {isGuest} = useSelector(state => state.Auth);
   const [isAuthAction, serIsAuthAction] = useState(false);
   const dispatch = useDispatch();
   const [btnLoader, setBtnLoader] = useState(false); // null = loading state
+  const [current_id, setCurrent_id] = useState(null);
 
   const [productImages, setProductsImages] = useState([]);
   const [productSKU, setProductSKU] = useState(
@@ -85,13 +93,24 @@ const ProductDetailsScreen = ({route, navigation}) => {
     if (isGuest) {
       serIsAuthAction(true);
     } else {
+      const isWishlisted = !(wishlistOverride[item.id] ?? item?.is_in_wishlist);
+
+      // 🔥 Instant UI update
+      dispatch(
+        setWishlistOverride({
+          productId: item.id,
+          isWishlisted,
+        }),
+      );
+
       let screen = 'ProductDetailsScreen';
       let sku = productDetails?.product?.product_sku;
-      let payload = {
-        product_variant_id: item?.id,
-        is_saved_for_later: 1,
+      const payload = {
+        product_variant_id: item.id,
+        action: item?.is_in_wishlist ? 'remove' : 'add',
         quantity: 1,
       };
+      console.log('ProductDetailsScreen', payload);
       dispatch(addToWishlistRequest({payload, screen, sku}));
     }
   };
@@ -293,6 +312,9 @@ const ProductDetailsScreen = ({route, navigation}) => {
   }, [productDetails]);
 
   const _renderproduct = ({item, index}) => {
+    const isWishlisted = wishlistOverride[item.id] ?? item.is_in_wishlist;
+
+    console.log('isWishlisted', isWishlisted);
     return (
       <TouchableOpacity
         key={index}
@@ -306,6 +328,8 @@ const ProductDetailsScreen = ({route, navigation}) => {
         <View style={styles.imageBox}>
           <TouchableOpacity
             onPress={() => {
+              setCurrent_id(item?.id);
+
               handleWishlist(item);
             }}
             style={styles.heart}>
@@ -316,6 +340,13 @@ const ProductDetailsScreen = ({route, navigation}) => {
               🤍
             </Text>
           </TouchableOpacity>
+
+          {wishlist_load && current_id == item?.id && (
+            <View style={styles.overlayCart}>
+              <ActivityIndicator size="small" color="#fff" />
+            </View>
+          )} 
+
           <AppImage
             uri={item?.image}
             autoHeight={false}
@@ -363,6 +394,7 @@ const ProductDetailsScreen = ({route, navigation}) => {
             handleWishlist(productDetails?.product);
           }}
           rightIcon={
+            wishlistOverride[productDetails?.product?.id] ??
             productDetails?.product?.is_in_wishlist
               ? ICONS?.adedWishlist
               : ICONS.wishlistList
@@ -507,7 +539,7 @@ const ProductDetailsScreen = ({route, navigation}) => {
                     marginVertical: ms(10),
                   },
                 ]}>
-                <Text style={styles.headerText}>Checkout Similar Propduct</Text>
+                <Text style={styles.headerText}>Checkout Similar Product</Text>
               </View>
             }
             showsVerticalScrollIndicator={false}
@@ -625,6 +657,20 @@ const createStyles = theme =>
       borderRadius: ms(5),
       resizeMode: 'stretch',
     },
+
+     overlayCart: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: 16,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex:+100000
+    },
+
     overlay: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: 'rgba(0,0,0,0.4)',

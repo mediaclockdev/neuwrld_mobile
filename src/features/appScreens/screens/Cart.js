@@ -7,8 +7,9 @@ import {
   Image,
   TouchableOpacity,
   TextInput,
+  Pressable,
 } from 'react-native';
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {getItem} from '../../../utils/storage';
 import CartPlaceholder from '../Skeleton/CartPlaceholder';
@@ -46,7 +47,7 @@ const Cart = () => {
   const styles = createStyles(theme);
   const {showPopup} = usePopup();
   const [promocode, setPromocode] = useState(appliedCoupon?.code ?? '');
-
+  const [outOfStock, setOutOfStock] = useState([]);
   const _handleQuantity = (item, isIncrement) => {
     let prevQty = isIncrement
       ? Number(item?.quantity) + 1
@@ -126,8 +127,22 @@ const Cart = () => {
     }
   }, [showModal.visible]);
 
+  const hasOutOfStockItems = useMemo(() => {
+    return cartData?.cart_items?.filter(item => item?.out_of_stock);
+  }, [cartData]);
+
+  const removeOutOfStockProd = item => {
+    let payload = {
+      product_variant_id: item?.product_variant_id,
+    };
+    let screen = {
+      isCart: true,
+    };
+    dispatch(handleCartRemoveRequest({payload, screen}));
+  };
+
   const _renderItem = ({item, index}) => {
-    return (
+    return !item?.out_of_stock ? (
       <View key={item?.product_variant_id} style={styles.cardRow}>
         <View style={styles.row}>
           <Image source={{uri: item?.image}} style={styles.productImage} />
@@ -142,6 +157,7 @@ const Cart = () => {
             <Text style={styles.amount}>{item?.price}</Text>
           </View>
         </View>
+
         <View style={styles.qtyBtn}>
           <TouchableOpacity
             onPress={() => {
@@ -169,8 +185,39 @@ const Cart = () => {
           </TouchableOpacity>
         </View>
       </View>
+    ) : null;
+  };
+
+  const _renderOutOfStockItem = ({item, index}) => {
+    return (
+      <View key={item?.product_variant_id} style={styles.cardRow}>
+        <View style={styles.row}>
+          <Image source={{uri: item?.image}} style={styles.productImage} />
+          <View style={{marginLeft: ms(10), maxWidth: '40%'}}>
+            <Text style={styles.title}>{item?.product_name}</Text>
+          </View>
+        </View>
+
+        <>
+          <Pressable
+            onPress={() => {
+              removeOutOfStockProd(item);
+            }}
+            style={{
+              width: ms(120),
+              height: ms(30),
+              backgroundColor: theme?.gray,
+              borderRadius: 4,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
+            <Text style={styles.out_of_stock}>Remove Product</Text>
+          </Pressable>
+        </>
+      </View>
     );
   };
+
 
   if (isLoading) {
     return <CartPlaceholder />;
@@ -233,10 +280,35 @@ const Cart = () => {
                 onPress={() => navigate('Checkout', {})}
                 title={'Continue To Checkout'}
                 loading={btnLoader}
-                btnStyle={styles.checkoutBtn}
+                disabled={hasOutOfStockItems?.length > 0 ? true : false}
+                btnStyle={[
+                  styles.checkoutBtn,
+                  {
+                    opacity: hasOutOfStockItems?.length > 0 ? 0.5 : 1,
+                  },
+                ]}
               />
             </View>
           )}
+
+          {hasOutOfStockItems?.length > 0 && (
+            <FlatList
+              data={hasOutOfStockItems}
+              keyExtractor={(item, index) => item?.product_variant_id}
+              renderItem={_renderOutOfStockItem}
+              scrollEnabled={false}
+              ListHeaderComponent={
+                <View style={{alignItems: 'flex-start'}}>
+                  <Text style={styles.headerText}>Out of stock</Text>
+                  <Text style={styles.SubheaderOutOfStockText}>
+                    Please remove unavailable items or adjust your cart to
+                    continue.
+                  </Text>
+                </View>
+              }
+            />
+          )}
+
           <View style={styles.devider} />
         </ScrollView>
       </View>
@@ -269,7 +341,13 @@ const createStyles = theme =>
       marginBottom: vs(20),
       letterSpacing: 0.5,
     },
-
+    SubheaderOutOfStockText: {
+      fontSize: fontSizes.sm,
+      color: theme.gray,
+      fontFamily: fontFamily.playfair_regular,
+      marginBottom: vs(10),
+      letterSpacing: 0.5,
+    },
     emptyText: {
       fontSize: fontSizes.base,
       color: theme.primary_color,
@@ -365,6 +443,11 @@ const createStyles = theme =>
       fontSize: fontSizes.base,
       fontFamily: fontFamily.poppins_medium,
       color: theme?.text,
+    },
+    out_of_stock: {
+      fontSize: fontSizes.sm,
+      fontFamily: fontFamily.poppins_medium,
+      color: theme?.primary_shade,
     },
     bottomCont: {
       width: '100%',

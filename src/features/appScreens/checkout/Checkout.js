@@ -6,8 +6,9 @@ import {
   Text,
   View,
   FlatList,
+  Alert,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {useTheme} from '../../../context/ThemeContext';
 import {fontFamily, fontSizes} from '../../../theme/typography';
 import {hp, ms, rr, s, vs} from '../../../utils/responsive';
@@ -19,31 +20,171 @@ import CustomButton from '../../../components/CustomButton';
 import {useDispatch, useSelector} from 'react-redux';
 import {ToastService} from '../../../utils/toastService';
 import {TextInput} from 'react-native-gesture-handler';
-import {getCouponRequest} from '../appReducer';
+import {
+  getCartRequest,
+  getCouponRequest,
+  setAppliedCoupon,
+} from '../appReducer';
+import {useStripe} from '@stripe/stripe-react-native';
+import {getApi, postApi} from '../../../api/requestApi';
+import {usePopup} from '../../../context/PopupContext';
+import {ALL_APi_LIST} from '../../../utils/apis';
+import {parsePriceToNumber} from '../../../utils/StringToBNum';
 
 const Checkout = ({route}) => {
+  const {initPaymentSheet, presentPaymentSheet} = useStripe();
+  const orderRef = useRef(null); // idempotency anchor
+  const payment_intent_id_ref = useRef(null); // idempotency anchor
+
   const {customerDash, isLoading, savedAddress, appliedCoupon, cartData} =
     useSelector(state => state.App);
-  const [promocode, setPromocode] = useState(appliedCoupon?.code ?? '');
+  const [promocode, setPromocode] = useState('');
   const [btnLoader, setBtnLoader] = useState(false); // null = loading state
 
   const {theme} = useTheme();
   const styles = createStyles(theme);
   const dispatch = useDispatch();
 
-  const handleCheckout = () => {
-    if (savedAddress?.addresses?.length > 0) {
-      let isDefault = savedAddress?.addresses?.find(
-        item => item?.primary == true,
-      );
-      isDefault
-        ? navigate('Payment')
-        : (ToastService.info('Please select your shipping address'),
-          navigate('AddressScreen'));
-    } else {
-      ToastService.info('Please add your shipping address'),
-        navigate('AddressScreen');
+  const [sheetReady, setSheetReady] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const {showPopup} = usePopup();
+
+  console.log('appliedCoupon', appliedCoupon, promocode);
+
+  const createOrder = async () => {
+    if (orderRef.current) return orderRef.current; // 🔒 idempotent
+
+    const payload = {
+      payment_method: 1,
+      shipping_address: cartData?.shipping_address?.id,
+      billing_address: cartData?.billing_address?.id,
+      coupon_id:
+        appliedCoupon?.coupon_id ?? cartData?.cart_summary?.coupon_id ?? '',
+      coupon_discount:
+        appliedCoupon?.discount ??
+        cartData?.cart_summary?.coupon_discount ??
+        '',
+    };
+    console.log(
+      "payload",payload
+    )
+    const res = await postApi('checkout/process', payload).catch(err => {
+      console.log('error', err?.response);
+    });
+    const orderNumber = res?.data?.order_number;
+
+    if (!orderNumber) {
+      throw new Error('Order creation failed');
     }
+
+    orderRef.current = orderNumber;
+    return orderNumber;
+  };
+
+  const getStripeClientSecret = async orderNumber => {    
+    const res = await postApi('checkout/stripe/init', {
+      order_number: orderNumber,
+    });
+
+    const clientSecret = res?.data?.payment_intent_client_secret;
+    // 🔐 store payment intent id
+    payment_intent_id_ref.current = res?.data?.payment_intent_id;
+
+    if (!clientSecret || !clientSecret.startsWith('pi_')) {
+      throw new Error('Invalid Stripe client secret');
+    }
+
+    return clientSecret;
+  };
+
+  const initStripeSheet = async clientSecret => {
+    setSheetReady(false);
+    const {error} = await initPaymentSheet({
+      paymentIntentClientSecret: clientSecret,
+      merchantDisplayName: 'Neuwrld Fashion Application',
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    setSheetReady(true);
+  };
+
+  const updateOrder = () => {
+    postApi('checkout/stripe/confirm', {
+      order_number: orderRef.current,
+      payment_intent_id: payment_intent_id_ref.current,
+    })
+      .then(res => {
+        handlePayment();
+      })
+      .catch(err => console.log('errrr', err));
+  };
+
+  const presentStripeSheet = async () => {
+    const {error} = await presentPaymentSheet();
+
+    if (error) {
+      throw error;
+    }
+  };
+
+  const startCheckout = async () => {
+    if (loading) return;
+
+    try {
+      setLoading(true);
+
+      if (!cartData?.shipping_address?.id) {
+        Alert.alert('Address required', 'Please select shipping address');
+        return;
+      }
+
+      const orderNumber = await createOrder();
+      const clientSecret = await getStripeClientSecret(orderNumber);
+
+      await initStripeSheet(clientSecret);
+      await presentStripeSheet();
+
+      // ⚠️ NOT marking PAID
+      await updateOrder();
+      ToastService.info(
+        'Payment Processing',
+        'We are confirming your payment. You will be notified shortly.',
+      );
+    } catch (err) {
+      console.log('Stripe checkout error:', err);
+      Alert.alert('Payment failed', err?.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetCheckoutRefs = () => {
+    orderRef.current = null;
+    payment_intent_id_ref.current = null;
+    setSheetReady(false);
+  };
+
+  useEffect(() => {
+    if (appliedCoupon) {
+      setPromocode(appliedCoupon?.coupon_code ?? appliedCoupon?.code ?? '');
+    }
+
+    return () => {
+      resetCheckoutRefs();
+    };
+  }, [appliedCoupon]);
+
+  const handlePayment = () => {
+    showPopup({
+      type: 'success',
+      title: 'Order Placed!',
+      message: 'Payment Success , thank you for shopping with us  🎉',
+      confirmText: 'Continue to explore',
+      onConfirm: () => navigate('MyTabs', {screen: 'Home'}),
+    });
   };
 
   const renderItem = ({item}) => {
@@ -70,14 +211,17 @@ const Checkout = ({route}) => {
       );
     }
   };
-
+  console.log(
+    'cartData?.cart_summary?.coupon_discount',
+    cartData?.cart_summary?.coupon_discount,
+  );
   const _renderItem = ({item, index}) => {
     return (
       <View key={item?.product_variant_id} style={styles.cardRow}>
         <View style={styles.row}>
           <Image source={{uri: item?.image}} style={styles.productImage} />
           <View style={{marginLeft: ms(10), maxWidth: '80%'}}>
-            <Text style={styles.title}>{item?.name}</Text>
+            <Text style={styles.title}>{item?.product_name}</Text>
             <Text style={styles.size}>
               Size : {item?.selectedSize ?? 'free size'} ,
               <Text style={styles.qty}> Qty : {item?.quantity}</Text>
@@ -89,6 +233,24 @@ const Checkout = ({route}) => {
     );
   };
 
+  const _applyCoupon = item => {
+    const rawAmount = parsePriceToNumber(item?.final_amount);
+    postApi('coupon/apply', {
+      coupon_code: promocode,
+      order_amount: rawAmount,
+    }).then(res => {
+      dispatch(setAppliedCoupon(res?.data));
+      console.log('res coupon ', res?.data);
+      if (res?.data?.discount) {
+        dispatch(getCartRequest(promocode));
+        ToastService.success(
+          'Coupon Applied 🎉',
+          'Discount has been successfully added to your cart.',
+        );
+      }
+    });
+  };
+
   return (
     <View style={styles.parent}>
       <SubHeader onPressLeftIcon={() => goBack()} centerlabel={'Checkout'} />
@@ -96,6 +258,7 @@ const Checkout = ({route}) => {
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.shippingAddressCont}>
             <Text style={styles.headerText}>Shipping Address</Text>
+
             <FlatList
               data={savedAddress?.addresses}
               keyExtractor={item => item.id}
@@ -150,13 +313,18 @@ const Checkout = ({route}) => {
                   style={styles.inputs}
                   placeholder="promo code..."
                   value={promocode}
+                  placeholderTextColor={'#696969'}
                 />
                 <TouchableOpacity
-                  onPress={() => handlePromoCode()}
-                  style={styles.applyBtn}>
-                  <Text style={styles.apply}>
-                    {appliedCoupon?.code ? 'Applied' : 'Apply'}
-                  </Text>
+                  onPress={() => _applyCoupon(cartData?.cart_summary)}
+                  disabled={promocode || appliedCoupon ? false : true}
+                  style={[
+                    styles.applyBtn,
+                    {
+                      opacity: promocode || appliedCoupon ? 1 : 0.3,
+                    },
+                  ]}>
+                  <Text style={styles.apply}>{'Apply'}</Text>
                 </TouchableOpacity>
               </View>
               <Text
@@ -170,26 +338,25 @@ const Checkout = ({route}) => {
 
               {/* // price breakup // */}
               <View style={styles.rowamount}>
-                <Text style={styles.lable}>Total amount</Text>
+                <Text style={styles.lable}>Total Amount</Text>
                 <Text style={styles.value}>
-                  {/* {cartData?.cart_summary?.raw_subtotal} */}
-                  {Math.round(cartData?.cart_summary?.raw_subtotal)}
+                  {cartData?.cart_summary?.subtotal}
                 </Text>
               </View>
               <View style={styles.rowamount}>
-                <Text style={styles.lable}>Tax diduction</Text>
+                <Text style={styles.lable}>Tax Deductions</Text>
                 <Text style={styles.value}>
                   {cartData?.cart_summary?.total_tax}
                 </Text>
               </View>
               <View style={styles.rowamount}>
-                <Text style={styles.lable}>Prpmo Code discound</Text>
+                <Text style={styles.lable}>Promo Code Discount</Text>
                 <Text style={styles.value}>
-                  {cartData?.cart_summary?.coupon_discount}
+                  {cartData?.cart_summary?.discount}
                 </Text>
               </View>
               <View style={styles.rowamount}>
-                <Text style={styles.lable}>Payable amount</Text>
+                <Text style={styles.lable}>Payable Amount</Text>
                 <Text style={styles.value}>
                   {cartData?.cart_summary?.final_amount}
                 </Text>
@@ -204,10 +371,10 @@ const Checkout = ({route}) => {
                 </View>
                 <CustomButton
                   onPress={() => {
-                    handleCheckout();
+                    startCheckout();
                   }}
                   title={'Continue To Payment'}
-                  loading={btnLoader}
+                  loading={btnLoader || loading}
                   btnStyle={styles.checkoutBtn}
                 />
               </View>

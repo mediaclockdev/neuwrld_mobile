@@ -4,19 +4,35 @@ import {ms, rr, vs} from '../../../utils/responsive';
 import {fontSizes} from '../../../theme/typography';
 
 const OrderCard = ({order, onTrack, theme}) => {
+  console.log('orderorder', order);
   const styles = CreateStyle(theme);
   return (
     <View style={styles.card}>
-      <Image source={{uri: order.image}} style={styles.image} />
+      <Image
+        source={{uri: order?.order_products[0]?.image}}
+        style={styles.image}
+      />
+      {order?.order_products?.length > 1 ? 
+      <View style={{padding:ms(5),height:ms(25),position:'absolute',bottom:-5,left:ms(20),backgroundColor:'#696969',borderRadius:15}}>
+        <Text style={{fontSize:10,color:'#fff'}}>+{order?.order_products?.length}</Text>
+      </View>:null
+    }
+      
       <View style={styles.info}>
-        <Text style={styles.title}>{order.title}</Text>
-        <Text style={styles.sub}>
-          Size: {order.size} | Qty: {order.qty}
+        <Text style={styles.title}>
+          {order?.order_products[0]?.product_name}
         </Text>
-        <Text style={styles.price}>${order.price}</Text>
+        <Text style={styles.sub}>
+          Size: {order?.order_products[0]?.name} | Qty:{' '}
+          {order?.order_products[0]?.quantity}
+        </Text>
+        {/* <Text style={styles.price}>${order_products[0]?.tax_amount}</Text> */}
       </View>
-      <TouchableOpacity style={styles.trackBtn} onPress={() => onTrack(order)}>
-        <Text style={styles.trackText}>Track Order</Text>
+      <TouchableOpacity
+        disabled
+        style={styles.trackBtn}
+        onPress={() => onTrack(order)}>
+        <Text style={styles.trackText}>View Details</Text>
       </TouchableOpacity>
     </View>
   );
@@ -47,6 +63,7 @@ const CreateStyle = theme =>
       paddingHorizontal: ms(12),
       paddingVertical: vs(6),
       borderRadius: rr(20),
+      opacity: 0.5,
     },
     trackText: {
       color: theme?.background,

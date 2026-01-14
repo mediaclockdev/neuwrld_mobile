@@ -11,20 +11,25 @@ import {
 } from 'react-native';
 import {ICONS} from '../theme/colors';
 import {fontFamily, fontSizes} from '../theme/typography';
-import {hp, s, vs} from '../utils/responsive';
+import {hp, ms, s, vs} from '../utils/responsive';
 
 const CustomTextInput = ({
   value,
   onChangeText,
+  leftCustomComponent,
   placeholder,
   tintColor,
   icon,
+  type,
   maxLength,
   secureTextEntry,
   rightLoader,
   customStyle,
   placeholderTextColor,
   customIconStyleLeft,
+  onPress,
+  onPressRightIcon,
+  rightIcon,
   propsStyle,
   textAlignVertical,
   error,
@@ -79,28 +84,58 @@ const CustomTextInput = ({
             style={[styles.leftIcon, customIconStyleLeft]}
           />
         )}
+        {leftCustomComponent && (
+          <View style={{marginRight: 8}}>{leftCustomComponent}</View>
+        )}
+
         <Animated.Text style={labelStyle}>{placeholder}</Animated.Text>
-        <TextInput
-          style={[styles.textInput, {...propsStyle}]}
-          value={value}
-          onChangeText={onChangeText}
-          maxLength={maxLength}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          secureTextEntry={secureTextEntry && showPassword}
-          keyboardType={keyboardType}
-          placeholder=""
-          textAlignVertical={textAlignVertical}
-          autoCorrect={false}
-          placeholderTextColor={placeholderTextColor || '#999'}
-          
-        />
+        {type === 'dropdown' ? (
+          <TouchableOpacity
+            style={[styles.textInput, {...propsStyle}]}
+            onPress={onPress}>
+            <Text style={styles.gender}>{value}</Text>
+          </TouchableOpacity>
+        ) : (
+          <TextInput
+            style={[styles.textInput, {...propsStyle}]}
+            value={value}
+            onChangeText={onChangeText}
+            maxLength={maxLength}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            secureTextEntry={secureTextEntry && showPassword}
+            keyboardType={keyboardType}
+            blurOnSubmit={false}
+            returnKeyType="next"
+            placeholder=""
+            textAlignVertical={textAlignVertical}
+            autoCorrect={false}
+            placeholderTextColor={placeholderTextColor || '#999'}
+          />
+        )}
+
         {secureTextEntry && (
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
             <Image
               source={showPassword ? ICONS.eye : ICONS.eye_off}
               resizeMode="contain"
               style={{marginRight: 8, width: 20, height: 20}}
+            />
+          </TouchableOpacity>
+        )}
+        {rightIcon && (
+          <TouchableOpacity
+            style={{
+              width: ms(45),
+              height: ms(45),
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+            onPress={onPressRightIcon}>
+            <Image
+              source={rightIcon}
+              resizeMode="contain"
+              style={{width: 20, height: 20}}
             />
           </TouchableOpacity>
         )}

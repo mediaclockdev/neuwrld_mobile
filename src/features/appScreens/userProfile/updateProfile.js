@@ -6,7 +6,10 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
+  KeyboardAvoidingView,
   Alert,
+  Platform,
+  Pressable,
 } from 'react-native';
 import CustomTextInput from '../../../components/CustomTextInput';
 import CustomButton from '../../../components/CustomButton';
@@ -21,49 +24,96 @@ import {useTheme} from '../../../context/ThemeContext';
 import {fontFamily, fontSizes} from '../../../theme/typography';
 import {usePopup} from '../../../context/PopupContext';
 import ReusableModal from '../components/ReusableModal';
-import {loerms_ipsum} from '../../../utils/globalJson';
+import {COUNTRIES, loerms_ipsum} from '../../../utils/globalJson';
 import {useDispatch, useSelector} from 'react-redux';
 import Header from '../../../components/Header';
+import SubHeader from '../components/SubHeader';
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
+import BottomSheet from '../../../components/BottomSheet';
+import {updateUserProfileDetails} from '../appReducer';
+import {goBack} from '../../../utils/rootNavigation';
 
-const emailSchema = Yup.object().shape({
-  fullName: Yup.string().required('Full name is required'),
-  email: Yup.string().email('Invalid email').required('Email is required'),
-  password: Yup.string()
-    .min(6, 'Password must be at least 6 characters')
-    .required('Password is required'),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref('password')], 'Passwords must match')
-    .required('Confirm password is required'),
-  terms: Yup.boolean().oneOf([true], 'You must accept terms'),
-});
+// export const userScheema = Yup.object().shape({
+//   first_name: Yup.string().required('First name is required'),
 
-const phoneSchema = Yup.object().shape({
+//   last_name: Yup.string().required('Last name is required'),
+
+//   gender: Yup.string().required('Please select your gender'),
+
+//   country_code: Yup.string().required(),
+
+//   mobile: Yup.string().required('Mobile number is required'),
+
+// });
+
+export const userScheema = Yup.object().shape({
+  first_name: Yup.string().required('First name is required'),
+
+  last_name: Yup.string().required('Last name is required'),
+
+  gender: Yup.string().required('Please select your gender'),
+
+  country_code: Yup.string().required(),
+
   mobile: Yup.string()
-    .matches(/^[0-9]{10}$/, 'Enter valid 10-digit number')
-    .required('Phone number is required'),
-  terms: Yup.boolean().oneOf([true], 'You must accept terms'),
+    .required('Mobile number is required')
+    .test('mobile-length-by-country', function (value) {
+      const {country_code} = this.parent;
+      const country = COUNTRIES.find(c => c.code === country_code);
+      console.log('country_code', country_code, country);
+
+      if (!country || !value) {
+        return this.createError({
+          message: 'Enter mobile number',
+        });
+      }
+
+      if (value.length < country.minLength) {
+        return this.createError({
+          message: `Mobile number must be ${country.minLength} digits`,
+        });
+      }
+
+      if (value.length > country.maxLength) {
+        return this.createError({
+          message: `Mobile number must be ${country.maxLength} digits`,
+        });
+      }
+
+      return true;
+    })
+    .test('mobile-regex-by-country', function (value) {
+      const {country_code} = this.parent;
+      const country = COUNTRIES.find(c => c.code === country_code);
+
+      if (!country || !value) return false;
+
+      const normalized = country.dialCode + value;
+
+      if (!country.regex.test(normalized)) {
+        return this.createError({
+          message: country.error,
+        });
+      }
+
+      return true;
+    }),
 });
 
 const UpdateProfile = ({navigation}) => {
   const {showPopup} = usePopup();
+  const [showCountrySheet, setShowCountrySheet] = useState(false);
 
-  const {isRegisterSuccess, isDataSubmitting} = useSelector(
-    state => state.Auth,
-  );
+  const {customerDash, isLoading, allOrders, appliedCoupon, cartData} =
+    useSelector(state => state.App);
 
   const dispatch = useDispatch();
 
   const {theme} = useTheme(); // 👈 hook works here
   const styles = createStyles(theme);
 
-  const [isOtpModalVisible, setOtpModalVisible] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
-  const [selectedTab, setSelectedTab] = useState('Email');
-  const [mobile, setMobile] = useState('');
-  const [resolver, setResolver] = useState(() => yupResolver(emailSchema));
-  const [mobileerr, setMobileError] = useState('');
-  const [termsCheck, setTermsCheck] = useState(false);
-  const [termsErr, setTermsErr] = useState('');
+  const [genderPicker, setGenderPicker] = useState(false);
+  const [resolver, setResolver] = useState(() => yupResolver(userScheema));
   const onFocusEffect = React.useCallback(() => {
     // This should be run when screen gains focus - enable the module where it's needed
     AvoidSoftInput.setEnabled(true);
@@ -76,254 +126,189 @@ const UpdateProfile = ({navigation}) => {
   useFocusEffect(onFocusEffect); // register callback to focus events
   const {
     control,
+    setValue,
+    watch,
     handleSubmit,
-    reset,
-    formState: {errors, isSubmitting},
+    formState: {errors},
   } = useForm({
-    resolver,
+    resolver: yupResolver(userScheema),
     defaultValues: {
-      fullName: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
+      first_name: '',
+      last_name: '',
+      gender: '',
+      country_code: 'AU',
       mobile: '',
-      terms: false,
     },
   });
 
-  // 🔄 Update schema + reset when tab changes
-  useEffect(() => {
-    if (selectedTab === 'Email') {
-      setResolver(() => yupResolver(emailSchema));
-      reset({
-        fullName: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        terms: false,
-      });
-    } else {
-      setResolver(() => yupResolver(phoneSchema));
-      reset({
-        mobile: '',
-        terms: false,
-      });
-    }
-  }, [selectedTab, reset]);
-
-  function validateMobileNumber(number) {
-    const regex = /^\d{9,14}$/;
-    return regex.test(number);
-  }
-
   const onSubmit = async data => {
-    console.log('Register Data:', data);
     let payload = {
-      fullName: data?.fullName,
-      email: data?.email,
-      password: data?.password,
-      confirmPassword: data?.confirmPassword,
-      mobile: '9876543210',
-      terms: data?.terms,
+      first_name: data?.first_name,
+      last_name: data?.last_name,
+      gender: data?.gender === 'Male' ? 1 : data?.gender === 'Female' ? 2 : 3,
+      phone: data?.mobile,
     };
-
-    // API Call
+    console.log('Register Data:', payload);
+    dispatch(updateUserProfileDetails(payload));
+    setTimeout(() => {
+      goBack();
+    }, 1000);
   };
 
-  useEffect(() => {
-    if (isRegisterSuccess) {
-      showPopup({
-        type: 'success',
-        title: 'Done!',
-        message: 'Successfully registerd , thank you for choosing us  🎉',
-        confirmText: 'Continue to Login',
-        onConfirm: () => navigation.navigate('Login'),
-      });
-      setTimeout(() => {
-        navigation.replace('Login');
-      }, 1500);
-    }
-  }, [isRegisterSuccess]);
-
-  const handleMobileRegister = otp => {
-    console.log(otp);
-    if (otp) {
-      setTimeout(() => {
-        showPopup({
-          type: 'success',
-          title: 'Done!',
-          message: 'Successfully registerd , thank you for choosing us  🎉',
-          confirmText: 'Continue to Login',
-          onConfirm: () => navigation.navigate('Login'),
-        });
-      }, 1500);
-    } else {
-      setOtpModalVisible(true);
-    }
+  const handleGender = () => {
+    setGenderPicker(!genderPicker);
   };
+
+  const selectedCountry =
+    COUNTRIES.find(c => c.code === watch('country_code')) || COUNTRIES[0];
 
   return (
-    <AvoidSoftInputView style={styles.parent} behavior="padding">
-      <Header />
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Update Your Account</Text>
-        <Text style={[styles.subtitle]}>
-          Fill your details below and be the part of Neuwrld
+    <KeyboardAvoidingView
+      style={{flex: 1}}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}>
+      <SubHeader hideRigthIcon />
+
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraScrollHeight={20}>
+        <Text style={styles.title}>Complete Your Profile</Text>
+        <Text style={styles.subtitle}>
+          Update your details to enjoy a seamless Neuwrld experience
         </Text>
 
-        <View style={{width: wp(90)}}>
-          <Controller
-            control={control}
-            name="fullName"
-            render={({field: {onChange, value, onBlur}}) => (
-              <CustomTextInput
-                placeholder="Full Name"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                icon={ICONS.user}
-                error={errors.fullName?.message}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="email"
-            render={({field: {onChange, value, onBlur}}) => (
-              <CustomTextInput
-                placeholder="Email"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                icon={ICONS.email}
-                keyboardType="email-address"
-                error={errors.email?.message}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="password"
-            render={({field: {onChange, value, onBlur}}) => (
-              <CustomTextInput
-                placeholder="Password"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                icon={ICONS.lock}
-                secureTextEntry
-                error={errors.password?.message}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="confirmPassword"
-            render={({field: {onChange, value, onBlur}}) => (
-              <CustomTextInput
-                placeholder="Confirm Password"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                icon={ICONS.lock}
-                secureTextEntry
-                error={errors.confirmPassword?.message}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="terms"
-            render={({field: {onChange, value}}) => (
-              <TouchableOpacity
-                style={styles.checkboxrow}
-                onPress={() => onChange(!value)} // toggle checkbox
-              >
-                <View
-                  style={[
-                    styles.checkbox,
-                    {
-                      borderColor: value ? theme?.primary_color : 'gray',
-                    },
-                  ]}>
-                  {value && (
-                    <Image
-                      source={ICONS.check}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        tintColor: theme?.primary_color,
-                      }}
-                      resizeMode="contain"
-                    />
-                  )}
-                </View>
-                <Text style={styles.terms}>
-                  I accept the
-                  <Text
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={{width: wp(90), marginTop: ms(10)}}>
+            <Controller
+              control={control}
+              name="first_name"
+              render={({field: {onChange, value, onBlur}}) => (
+                <CustomTextInput
+                  placeholder="First Name *"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  icon={ICONS.user}
+                  error={errors.first_name?.message}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="last_name"
+              render={({field: {onChange, value, onBlur}}) => (
+                <CustomTextInput
+                  placeholder="Last Name *"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  icon={ICONS.user}
+                  error={errors.last_name?.message}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="gender"
+              render={({field: {value, onBlur}}) => (
+                <CustomTextInput
+                  placeholder="Select Gender *"
+                  value={value}
+                  onBlur={onBlur}
+                  type="dropdown"
+                  icon={ICONS.gender}
+                  onPressRightIcon={handleGender}
+                  rightIcon={ICONS.down_arrow}
+                  error={errors.gender?.message}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="mobile"
+              render={({field: {onChange, value, onBlur}}) => (
+                <CustomTextInput
+                  placeholder="Mobile Number *"
+                  value={value}
+                  onChangeText={text => {
+                    const cleaned = text.replace(/[^0-9+]/g, '');
+                    onChange(cleaned);
+                  }}
+                  maxLength={selectedCountry.maxLength}
+                  keyboardType="phone-pad"
+                  onBlur={onBlur}
+                  // 👇 Country shown here
+                  leftCustomComponent={
+                    <TouchableOpacity
+                      style={{flexDirection: 'row', alignItems: 'center'}}
+                      onPress={() => setShowCountrySheet(true)}>
+                      <Text style={{fontSize: 18}}>{selectedCountry.flag}</Text>
+                      <Text style={{marginLeft: 6}}>
+                        {selectedCountry.dialCode}
+                      </Text>
+                    </TouchableOpacity>
+                  }
+                  rightIcon={ICONS.down_arrow}
+                  onPressRightIcon={() => setShowCountrySheet(true)}
+                  error={errors.mobile?.message}
+                />
+              )}
+            />
+
+            <CustomButton
+              title="Update Details"
+              onPress={handleSubmit(onSubmit)}
+              loading={isLoading}
+            />
+
+            <BottomSheet
+              visible={showCountrySheet}
+              renderChild={COUNTRIES.map(country => {
+                const selected = watch('country_code');
+                return (
+                  <Pressable
+                    key={country.code}
+                    style={{padding: 16}}
                     onPress={() => {
-                      setShowTermsModal(true);
-                    }}
-                    style={{color: '#3847ff'}}>
-                    {' '}
-                    Terms & Conditions
-                  </Text>
-                </Text>
-              </TouchableOpacity>
-            )}
-          />
-          {errors.terms && (
-            <Text style={{color: 'red'}}>{errors.terms.message}</Text>
-          )}
-          <CustomButton
-            title="Sign Up"
-            onPress={handleSubmit(onSubmit)}
-            loading={isDataSubmitting}
-          />
-        </View>
-
-        <View style={styles.rowfooter}>
-          <Text
-            style={[
-              styles.subtitle,
-              {
-                color: theme?.text,
-                fontSize: fontSizes.sm,
-                fontFamily: fontFamily.poppins_regular,
-              },
-            ]}>
-            Already have have an account?
-          </Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Login')}
-            activeOpacity={0.7}>
-            <Text
-              style={[
-                styles.subtitle,
-                {
-                  color: theme?.text,
-                  fontSize: fontSizes.sm,
-                  fontFamily: fontFamily.poppins_semiBold,
-                },
-              ]}>
-              Login
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      {/* // terms and Conditions popup // */}
-      <ReusableModal
-        isVisible={showTermsModal}
-        onClose={() => setShowTermsModal(false)}
-        title={'Terms & Conditions'}
-        children={
-          <View style={styles.termscontainer}>
-            <Text style={styles.termsDetails}>{loerms_ipsum}</Text>
+                      setValue('country_code', country.code);
+                      setValue('mobile', '');
+                      setShowCountrySheet(false);
+                    }}>
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        color: selected === country.code ? '#C49A6C' : '#000',
+                      }}>
+                      {country.name} ({country.dialCode})
+                    </Text>
+                  </Pressable>
+                );
+              })}
+              onClose={() => setShowCountrySheet(false)}></BottomSheet>
+            <BottomSheet
+              visible={genderPicker}
+              renderChild={['Male', 'Female', 'Other'].map(item => (
+                <Pressable
+                  key={item}
+                  onPress={() => {
+                    setValue('gender', item, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    });
+                    setGenderPicker(false);
+                  }}
+                  style={styles.option}>
+                  <Text style={styles.optionText}>{item}</Text>
+                </Pressable>
+              ))}
+              onClose={() => setGenderPicker(false)}></BottomSheet>
           </View>
-        }
-      />
-    </AvoidSoftInputView>
+        </ScrollView>
+      </KeyboardAwareScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -334,7 +319,7 @@ const createStyles = theme =>
       backgroundColor: theme?.background,
     },
     container: {
-      padding: ms(20),
+      padding: ms(15),
       alignItems: 'center',
       flex: 1,
     },
@@ -346,7 +331,7 @@ const createStyles = theme =>
     title: {
       fontSize: fontSizes.xxl,
       textAlign: 'center',
-      marginVertical: vs(12),
+      marginVertical: vs(0),
       width: wp(70),
       fontFamily: fontFamily.playfair_semiBold,
       color: theme?.text,
@@ -386,11 +371,18 @@ const createStyles = theme =>
       textAlign: 'center',
       fontFamily: fontFamily.poppins_regular,
     },
-    rememberMe: {
-      marginLeft: 8,
+    gender: {
       fontSize: fontSizes.sm,
-      textAlign: 'center',
       fontFamily: fontFamily.poppins_regular,
+      color: '#000',
+      paddingTop: vs(8),
+    },
+    optionText: {
+      fontSize: fontSizes.sm,
+      fontFamily: fontFamily.poppins_regular,
+      color: '#000',
+      textAlign: 'center',
+      letterSpacing: ms(0.3),
     },
     rowfooter: {
       flexDirection: 'row',
@@ -422,6 +414,15 @@ const createStyles = theme =>
       backgroundColor: 'white',
       marginRight: ms(10),
       padding: s(2),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    leftIcon: {marginRight: 8, width: 20, height: 20},
+    option: {
+      width: '90%',
+      height: vs(45),
+      paddingHorizontal: ms(15),
+      paddingTop: ms(15),
       justifyContent: 'center',
       alignItems: 'center',
     },

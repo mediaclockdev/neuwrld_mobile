@@ -7,6 +7,7 @@ import {
   Image,
   TouchableOpacity,
   TextInput,
+  Pressable,
 } from 'react-native';
 import React, {useCallback, useState} from 'react';
 import {useTheme} from '../../../context/ThemeContext';
@@ -21,8 +22,14 @@ import UploadMedia from '../components/UploadMedia';
 import {useDispatch, useSelector} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import {usePopup} from '../../../context/PopupContext';
-import {getAddressRequest} from '../appReducer';
+import {
+  getAddressRequest,
+  getAllOrdersRequest,
+  getUserProfile,
+} from '../appReducer';
 import {userLogout} from '../../auth/authReducer';
+import {postApi} from '../../../api/requestApi';
+import {ALL_APi_LIST} from '../../../utils/apis';
 
 const UserProfile = () => {
   const {theme} = useTheme();
@@ -91,7 +98,7 @@ const UserProfile = () => {
         navigate('Settings');
         break;
       case 'orders':
-        navigate('MyOrdersScreen');
+        dispatch(getAllOrdersRequest());
         break;
       case 'profile':
         navigate('ProfileDetails');
@@ -119,10 +126,26 @@ const UserProfile = () => {
     setUser({userType: '', email: ''});
     navigate('Signup');
   };
+  const UploadProfile = async image => {
+    const data = new FormData();
+    data.append('image', {
+      uri: image.uri,
+      type: image.type || 'image/jpeg',
+      name: image.fileName || 'profile.jpg',
+    });
+    postApi(ALL_APi_LIST.update_image, data, true)
+      .then(res => {
+        dispatch(getUserProfile());
+        console.log('Upload success', res.data);
+      })
+      .catch(err => {
+        console.log('Upload error', err?.response?.data);
+      });
+  };
 
   const _renderItem = ({item, index}) => {
     return (
-      <View key={item?.id} style={styles.cardRow}>
+      <Pressable onPress={() => handleActions(item)} key={item?.id} style={styles.cardRow}>
         <View style={styles.row}>
           <Image source={item.icon} style={styles.icons} />
           <View style={{marginLeft: ms(10)}}>
@@ -137,7 +160,7 @@ const UserProfile = () => {
           style={styles.incBtn}>
           <Image source={ICONS.right_arrow} style={styles.rightIcons} />
         </TouchableOpacity>
-      </View>
+      </Pressable>
     );
   };
   return (
@@ -145,7 +168,13 @@ const UserProfile = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.container}>
-        <Text style={styles.headerText}>My Profile</Text>
+       <View style={{alignItems:'flex-start',width:'100%'}}>
+         <Text style={styles.headerText}>👤 Your Space</Text>
+        <Text style={styles.SubheaderText}>
+          Manage your info, orders & preferences ✨
+        </Text>
+       </View>
+
         <View style={styles.profileCont}>
           <FastImage
             source={
@@ -194,7 +223,7 @@ const UserProfile = () => {
 
         <UploadMedia
           setImageSource={src => {
-            setLocalPhoto(src);
+            UploadProfile(src);
             setProfileUpdateVisible(false);
           }}
           onBackdropPress={() => {
@@ -223,9 +252,18 @@ const createStyles = theme =>
       alignItems: 'center',
     },
     headerText: {
-      fontSize: fontSizes.lg,
-      color: theme.text,
-      fontFamily: fontFamily.playfair_semiBold,
+      fontSize: fontSizes.xl,
+      color: theme.primary_color,
+      fontFamily: fontFamily.playfair_medium,
+      letterSpacing: 0.5,
+    },
+    SubheaderText: {
+      fontSize: fontSizes.base,
+      color: theme.gray,
+      lineHeight: ms(25),
+      fontFamily: fontFamily.playfair_italic,
+      marginBottom: vs(20),
+      letterSpacing: 0.5,
     },
     row: {
       flexDirection: 'row',

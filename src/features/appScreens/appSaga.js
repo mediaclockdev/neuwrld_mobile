@@ -1,12 +1,15 @@
-import {call, put, select, takeLatest, all} from 'redux-saga/effects';
+import {call, put, select, takeLatest, all, delay} from 'redux-saga/effects';
 import {
   addToWishlistFailure,
   addToWishlistSuccess,
   clearProfileError,
+  clearWishlistOverride,
   getAddressFailure,
   getAddressSuccess,
   getAllCategoriesFailure,
   getAllCategoriesSuccess,
+  getAllOrdersFailure,
+  getAllOrdersSuccess,
   getCartFailure,
   getCartSuccess,
   getCouponFailure,
@@ -25,6 +28,9 @@ import {
   handleCartFailure,
   handleCartRemoveSuccess,
   handleCartSuccess,
+  rempoveFromWishlistFailure,
+  rempoveFromWishlistSuccess,
+  setWishlistOverride,
 } from './appReducer';
 import {ALL_APi_LIST} from '../../utils/apis';
 import {errorHandler} from '../../utils/errorHandler';
@@ -66,6 +72,33 @@ function* getCustomerProfile(action) {
     }
 
     const response = yield call(getApi, ALL_APi_LIST.userProfile);
+    const data = response?.data?.data ?? response?.data ?? {};
+    yield put(getUserProfileSuccess(data));
+  } catch (error) {
+    if (error?.status === 401) {
+      try {
+        yield call(getCustomerRefreshToken); // ← Fixed: no ()
+      } catch (refreshError) {
+        // Refresh failed → probably logout
+        errorHandler(refreshError?.status || 500, refreshError?.message);
+        yield put(getUserProfileFailure(refreshError));
+        // Optionally: yield put(logout());
+        return;
+      }
+    }
+
+    // Normal error handling
+    errorHandler(error?.status || 500, error?.message);
+    yield put(getUserProfileFailure(error));
+  }
+}
+function* updateCustomerProfile(action) {
+  try {
+    const response = yield call(
+      postApi,
+      ALL_APi_LIST.userProfile,
+      action.payload,
+    );
     const data = response?.data?.data ?? response?.data ?? {};
     yield put(getUserProfileSuccess(data));
   } catch (error) {
@@ -160,20 +193,44 @@ function* getProductDetails(action) {
 }
 
 function* wishlistSaga(action) {
-  let screen = action?.payload?.screen;
-  let payload = action?.payload?.payload;
   let sku = action?.payload?.sku;
+
+  let screen = action?.payload?.screen;
+  const {payload} = action.payload;
+  const productId = payload.product_variant_id;
+
   try {
     const response = yield call(postApi, ALL_APi_LIST.wishlist, payload);
-    const data = response?.data?.data ?? response?.data ?? {};
-    yield put(addToWishlistSuccess(data));
 
-    if (screen == 'dashboard') {
-      yield call(getCustomerDash);
+    if (screen === 'ProductDetailsScreen') {
+      yield call(getProductDetails, sku);
     }
-    if (screen == 'ProductDetailsScreen') {
-      yield call(getProductDetails, sku); // ✅ FIXED
-    }
+    const data = response?.data?.data ?? response?.data ?? {};
+    yield put(getWishlistSuccess(data));
+
+    // 🧹 Clear override after refresh
+    yield delay(300);
+    // yield put(clearWishlistOverride(productId));
+  } catch (error) {
+    // ❌ Rollback UI
+    yield put(
+      setWishlistOverride({
+        productId,
+        isWishlisted: payload.action === 'remove',
+      }),
+    );
+  }
+}
+
+function* removewishlistSaga(action) {
+  try {
+    const response = yield call(
+      postApi,
+      ALL_APi_LIST.removeWish,
+      action?.payload,
+    );
+    const data = response?.data?.data ?? response?.data ?? {};
+    yield put(rempoveFromWishlistSuccess(data));
   } catch (error) {
     console.log('errorerror', error);
     const code = error?.response?.status;
@@ -190,15 +247,16 @@ function* wishlistSaga(action) {
       }
     }
 
-    errorHandler(code, message, 'addToWishlistFailure');
+    errorHandler(code, message, 'rempoveFromWishlistFailure');
     yield put(
-      addToWishlistFailure({
+      rempoveFromWishlistFailure({
         status: code,
         message: message || 'Something went wrong',
       }),
     );
   }
 }
+
 function* cartHandleSaga(action) {
   try {
     const response = yield call(
@@ -308,7 +366,7 @@ function* getWishlistSaga(action) {
   try {
     const response = yield call(
       getApi,
-      `${ALL_APi_LIST.getWishlist}?per_page=10`,
+      `${ALL_APi_LIST.getWishlist}?per_page=30`,
     );
     const data = response?.data?.data ?? response?.data ?? {};
     yield put(getWishlistSuccess(data));
@@ -395,9 +453,39 @@ function* getAddressSaga(action) {
     );
   }
 }
-
-
-
+function* getAllOrders(action) {
+  const filter = action.payload ?? 'all';
+  try {
+    const response = yield call(
+      getApi,
+      `${ALL_APi_LIST.my_orders}?per_page=10&filter=${filter}`,
+    );
+    const data = response?.data?.data ?? response?.data ?? [];
+    yield put(getAllOrdersSuccess(data));
+    navigate('MyOrdersScreen');
+  } catch (error) {
+    const code = error?.response?.status;
+    const message = error?.response?.data?.message;
+    if (error?.status === 401) {
+      try {
+        yield call(getCustomerRefreshToken); // ← Fixed: no ()
+      } catch (refreshError) {
+        // Refresh failed → probably logout
+        errorHandler(refreshError?.status || 500, refreshError?.message);
+        yield put(getAllOrdersFailure(refreshError));
+        // Optionally: yield put(logout());
+        return;
+      }
+    }
+    errorHandler(code, message, 'getAllOrdersFailure');
+    yield put(
+      getAllOrdersFailure({
+        status: code,
+        message: message || 'Something went wrong',
+      }),
+    );
+  }
+}
 
 // ✅ Watcher Saga
 function* appSaga() {
@@ -412,6 +500,7 @@ function* appSaga() {
   ]);
   yield all([takeLatest('app/getProductDetailsRequest', getProductDetails)]);
   yield all([takeLatest('app/getUserProfile', getCustomerProfile)]);
+  yield all([takeLatest('app/updateUserProfileDetails', updateCustomerProfile)]);
   yield all([takeLatest('app/addToWishlistRequest', wishlistSaga)]);
   yield all([takeLatest('app/handleCartRequest', cartHandleSaga)]);
   yield all([takeLatest('app/getCartRequest', cartGetHandleSaga)]);
@@ -419,6 +508,8 @@ function* appSaga() {
   yield all([takeLatest('app/handleCartRemoveRequest', removeCartHandleSaga)]);
   yield all([takeLatest('app/getWishlistRequest', getWishlistSaga)]);
   yield all([takeLatest('app/getAddressRequest', getAddressSaga)]);
+  yield all([takeLatest('app/getAllOrdersRequest', getAllOrders)]);
+  yield all([takeLatest('app/rempoveFromWishlistRequest', removewishlistSaga)]);
 }
 
 // ✅ Correct export

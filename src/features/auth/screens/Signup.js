@@ -202,7 +202,7 @@ const Signup = ({navigation}) => {
                   showPopup({
                     type: 'success',
                     title: 'Done!',
-                    showCancel:'false',
+                    // showCancel:'false',
                     message:
                       "Welcome! you're all set to explore our collection  🎉",
                     confirmText: 'Continue to explore',

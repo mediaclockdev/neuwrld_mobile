@@ -9,16 +9,19 @@ import {
   SafeAreaView,
   ScrollView,
   Button,
+  ActivityIndicator,
 } from 'react-native';
 import {useTheme} from '../../../context/ThemeContext';
 import {hp, ms, rr, s, vs} from '../../../utils/responsive';
 import {fontFamily, fontSizes} from '../../../theme/typography';
 import {useDispatch, useSelector} from 'react-redux';
 import {
+  addToWishlistRequest,
   getAllCategoriesRequest,
   getProductDetailsRequest,
   getProductRequest,
   getSubcategoryByCategoriesIdRequest,
+  setWishlistOverride,
 } from '../appReducer';
 import {goBack, navigate} from '../../../utils/rootNavigation';
 import {ICONS} from '../../../theme/colors';
@@ -35,7 +38,9 @@ import SortSheet from './SortSheet';
 const ProductList = () => {
   const {theme} = useTheme();
   const styles = createStyles(theme);
-  const {isLoading, products} = useSelector(state => state.App);
+  const {isLoading, products, wishlistOverride} = useSelector(
+    state => state.App,
+  );
   const {isGuest} = useSelector(state => state.Auth);
   const [isAuthAction, serIsAuthAction] = useState(false);
   const [showFilterModle, setShowFilterModle] = useState(false);
@@ -46,23 +51,48 @@ const ProductList = () => {
     dispatch(getProductDetailsRequest(item?.product_sku));
   };
 
+  // const handleWishlist = item => {
+  //   if (isGuest) {
+  //     serIsAuthAction(true);
+  //     return;
+  //   } else {
+  //     let payload = {
+  //       product_variant_id: item?.id,
+  //       is_saved_for_later: 1,
+  //       quantity: 1,
+  //     };
+  //     postApi(ALL_APi_LIST.wishlist, payload).then(res => {
+  //       console.log(res, payload, item);
+  //       if (res?.success == true) {
+  //         dispatch(getProductRequest(products?.category?.slug));
+  //       } else {
+  //       }
+  //     });
+  //   }
+  // };
+
   const handleWishlist = item => {
     if (isGuest) {
       serIsAuthAction(true);
       return;
     } else {
-      let payload = {
-        product_variant_id: item?.id,
-        is_saved_for_later: 1,
+      const isWishlisted = !(wishlistOverride[item.id] ?? item.is_in_wishlist);
+
+      // 🔥 Instant UI update
+      dispatch(
+        setWishlistOverride({
+          productId: item.id,
+          isWishlisted,
+        }),
+      );
+
+      const payload = {
+        product_variant_id: item.id,
+        action: isWishlisted ? 'add' : 'remove',
         quantity: 1,
       };
-      postApi(ALL_APi_LIST.wishlist, payload).then(res => {
-        console.log(res, payload, item);
-        if (res?.success == true) {
-          dispatch(getProductRequest(products?.category?.slug));
-        } else {
-        }
-      });
+
+      dispatch(addToWishlistRequest({payload}));
     }
   };
 
@@ -84,6 +114,8 @@ const ProductList = () => {
   }, [isAuthAction]);
 
   const renderProduct = ({item, index}) => {
+    const isWishlisted = wishlistOverride[item.id] ?? item.is_in_wishlist;
+
     return (
       <TouchableOpacity
         style={styles.card}
@@ -99,12 +131,11 @@ const ProductList = () => {
             }}
             style={styles.heart}>
             <Image
-              source={
-                item?.is_in_wishlist ? ICONS.adedWishlist : ICONS.wishlistList
-              }
+              source={isWishlisted ? ICONS.adedWishlist : ICONS.wishlistList}
               style={styles.wishlistListIcon}
             />
           </TouchableOpacity>
+          
           <AppImage
             uri={item?.image}
             autoHeight={false}

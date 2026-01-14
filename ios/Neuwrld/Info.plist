@@ -36,6 +36,17 @@
 	<key>NSCameraUsageDescription</key>
 <string>Camera access required</string>
 
+<key>CFBundleURLTypes</key>
+<array>
+  <dict>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>neuwrld</string>
+    </array>
+  </dict>
+</array>
+
+
 <key>NSPhotoLibraryUsageDescription</key>
 <string>Photo access required</string>
 

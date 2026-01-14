@@ -22,10 +22,12 @@ const initialState = {
   coupon_codes: [],
   savedAddress: [],
   cartData: [],
+  allOrders: [],
   addedToCart: false,
   removeProduct: false,
-  appliedCoupon: {},
+  appliedCoupon: '',
   isSuccess: false,
+  wishlistOverride: {}, // { [productId]: true/false }
 };
 
 const AppSlice = createSlice({
@@ -94,6 +96,11 @@ const AppSlice = createSlice({
       state.isLoading = false;
       state.error = action.payload;
     },
+    updateUserProfileDetails(state, action) {
+      state.isLoading = true;
+      state.error = null;
+    },
+ 
 
     getAllCategoriesRequest(state, action) {
       state.isLoading = true;
@@ -166,7 +173,7 @@ const AppSlice = createSlice({
       state.productDetails = data || {};
       state.error = null;
       state.isSuccess = true;
-      state.removeProduct = false
+      state.removeProduct = false;
     },
 
     getProductDetailsFailure(state, action) {
@@ -190,6 +197,49 @@ const AppSlice = createSlice({
     },
 
     addToWishlistFailure(state, action) {
+      state.profile_status = action.type;
+      state.wishlist_load = false;
+      state.error = action.payload || null;
+    },
+
+    toggleWishlistOptimistic(state, action) {
+      const {productId, isWishlisted} = action.payload;
+
+      // Dashboard products
+      state.products = state.products?.map(item =>
+        item.id === productId ? {...item, is_in_wishlist: isWishlisted} : item,
+      );
+
+      // Product Details
+      if (state.productDetails?.product?.id === productId) {
+        state.productDetails.product.is_in_wishlist = isWishlisted;
+      }
+    },
+
+    setWishlistOverride(state, action) {
+      const {productId, isWishlisted} = action.payload;
+      state.wishlistOverride[productId] = isWishlisted;
+    },
+
+    clearWishlistOverride(state, action) {
+      delete state.wishlistOverride[action.payload];
+    },
+
+    rempoveFromWishlistRequest(state, action) {
+      state.wishlist_load = true;
+      state.profile_status = action.type;
+      state.error = null;
+    },
+
+    rempoveFromWishlistSuccess(state, action) {
+      state.profile_status = action.type;
+      state.wishlist_load = false;
+      let data = action.payload;
+      state.addedToWishlist = data || {};
+      state.error = null;
+    },
+
+    rempoveFromWishlistFailure(state, action) {
       state.profile_status = action.type;
       state.wishlist_load = false;
       state.error = action.payload || null;
@@ -311,6 +361,26 @@ const AppSlice = createSlice({
       state.isLoading = false;
       state.error = action.payload || null;
     },
+
+    getAllOrdersRequest(state, action) {
+      state.isLoading = true;
+      state.profile_status = action.type;
+      state.error = null;
+    },
+
+    getAllOrdersSuccess(state, action) {
+      state.profile_status = action.type;
+      state.isLoading = false;
+      let data = action.payload;
+      state.allOrders = data || [];
+      state.error = null;
+    },
+
+    getAllOrdersFailure(state, action) {
+      state.profile_status = action.type;
+      state.isLoading = false;
+      state.error = action.payload || null;
+    },
   },
 });
 
@@ -345,6 +415,11 @@ export const {
   addToWishlistSuccess,
   addToWishlistFailure,
 
+
+  toggleWishlistOptimistic,
+  setWishlistOverride,
+  clearWishlistOverride,
+
   handleCartRequest,
   handleCartSuccess,
   handleCartFailure,
@@ -369,7 +444,16 @@ export const {
   getAddressSuccess,
   getAddressFailure,
 
+  getAllOrdersRequest,
+  getAllOrdersSuccess,
+  getAllOrdersFailure,
+
+  rempoveFromWishlistRequest,
+  rempoveFromWishlistSuccess,
+  rempoveFromWishlistFailure,
+
   updateUserProfile,
+  updateUserProfileDetails,
 } = AppSlice.actions;
 
 export default AppSlice.reducer;
