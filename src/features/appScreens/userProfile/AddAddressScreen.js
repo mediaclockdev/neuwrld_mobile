@@ -31,8 +31,9 @@ const schema = Yup.object().shape({
   city: Yup.string().required('City is required'),
   state: Yup.string().required('State is required'),
   zip: Yup.string()
-    .matches(/^[0-9]{5,6}$/, 'Enter valid Zip/Postal code')
-    .required('Zip/Postal code is required'),
+  .matches(/^(0[2-9]\d{2}|[1-9]\d{3})$/, 'Enter a valid Australian postcode')
+  .required('Postcode is required'),
+
 });
 export default function AddAddressScreen({navigation}) {
   const {savedAddress, userdetails} = useSelector(state => state.App);
@@ -157,7 +158,7 @@ const dispatch = useDispatch()
         {renderInput('street', 'Street Address', 'default', 'input')}
       {renderInput('city', 'City', 'default', 'input')}
         {renderInput('state', 'State', 'default', 'dropdown')}
-        {renderInput('zip', 'Zip / Postal Code', 'numeric', 'input', 6)}
+        {renderInput('zip', 'Zip / Postal Code', 'numeric', 'input', 4)}
       </ScrollView>
       {/* Bottom Fixed Button */}
       <View style={styles.bottomBar}>
