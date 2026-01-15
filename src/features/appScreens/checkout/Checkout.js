@@ -65,9 +65,7 @@ const Checkout = ({route}) => {
         cartData?.cart_summary?.coupon_discount ??
         '',
     };
-    console.log(
-      "payload",payload
-    )
+   
     const res = await postApi('checkout/process', payload).catch(err => {
       console.log('error', err?.response);
     });

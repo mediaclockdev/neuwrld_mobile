@@ -383,6 +383,14 @@ export const COUNTRIES = [
   },
 ];
 
+export const AvatarConfig = {
+  bodyType: 'slim' | 'regular' | 'athletic' | 'plus',
+  height: number ,  // 0.9 – 1.1
+  weight: number,    // 0.8 – 1.2
+  skinTone: 'light' | 'medium' | 'dark'
+};
+
+
 
 
 
